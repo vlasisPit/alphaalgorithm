@@ -1,3 +1,2 @@
-Case1 A B C D
-Case2 A C B D
-Case3 A E D
+Case1 A B A C D
+Case2 E F E

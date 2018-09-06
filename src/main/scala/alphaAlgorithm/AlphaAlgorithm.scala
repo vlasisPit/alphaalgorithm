@@ -1,8 +1,9 @@
 package alphaAlgorithm
 
+import misc.{PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
-import relations.Follow
+import relations.FindFollowRelation
 
 object AlphaAlgorithm {
 
@@ -14,7 +15,8 @@ object AlphaAlgorithm {
   }
 
   def main(args: Array[String]): Unit = {
-    val followRelation: Follow = new Follow()
+    import encoders.DataEncoders._
+    val followRelation: FindFollowRelation = new FindFollowRelation()
 
     Logger.getLogger("org").setLevel(Level.ERROR)
     val spark = SparkSession
@@ -32,11 +34,20 @@ object AlphaAlgorithm {
     import spark.implicits._
     val tracesDS = traces.toDS()
 
+/*    val tracesTuple = tracesDS
+          .map(traces => followRelation.findFollowRelation(traces))
+          .map(x=>x.getPairsMap())
+          .flatMap(map=>map.toSeq)  //map to collection of tuples
+          .map(x=>x._1+","+x._2._1.pairNotation+","+x._2._2.pairNotation)*/
+
     val tracesTuple = tracesDS
           .map(traces => followRelation.findFollowRelation(traces))
+          .map(x=>x.getPairsMap())
+          .flatMap(map=>map.toSeq)  //map to collection of tuples
+          .map(x=> List(new PairInfo((x._1, new PairNotation(x._2._1.pairNotation))), new PairInfo((x._1, new PairNotation(x._2._2.pairNotation)))))
           .flatMap(x=>x.toSeq)
 
-    tracesTuple.foreach(x=>println(x))
+    tracesTuple.foreach(x=>println(x.toString))
   }
 
 }
