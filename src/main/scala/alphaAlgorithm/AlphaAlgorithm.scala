@@ -2,8 +2,7 @@ package alphaAlgorithm
 
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
-
-import scala.collection.mutable.ListBuffer
+import relations.Follow
 
 object AlphaAlgorithm {
 
@@ -14,23 +13,9 @@ object AlphaAlgorithm {
     (caseId, trace)
   }
 
-  /**
-    * Find follow relation in the form of (PairAB, directAccess, InverseAccess)
-    * where directAccess is true when B follows A (AB) in the trace
-    * and InverseAccess is true when A follows B (BA) in the trace
-    * @param traceTuple
-    * @return
-    */
-  def findFollowRelation(traceTuple: (String, List[String])): List[(String, Boolean, Boolean)] = {
-    var pairInfo = new ListBuffer[(String, Boolean, Boolean)]()
-    for( i <- 0 to traceTuple._2.length-2){
-      val tuple3 = (traceTuple._2(i)+traceTuple._2(i+1),true,false)
-      pairInfo = pairInfo +=  tuple3
-    }
-    return pairInfo.toList
-  }
-
   def main(args: Array[String]): Unit = {
+    val followRelation: Follow = new Follow()
+
     Logger.getLogger("org").setLevel(Level.ERROR)
     val spark = SparkSession
       .builder()
@@ -48,7 +33,7 @@ object AlphaAlgorithm {
     val tracesDS = traces.toDS()
 
     val tracesTuple = tracesDS
-          .map(findFollowRelation)
+          .map(traces => followRelation.findFollowRelation(traces))
           .flatMap(x=>x.toSeq)
 
     tracesTuple.foreach(x=>println(x))
