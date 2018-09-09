@@ -1,2 +1,2 @@
 Case1 A B A C D
-Case2 E F E
+Case2 E A F B E

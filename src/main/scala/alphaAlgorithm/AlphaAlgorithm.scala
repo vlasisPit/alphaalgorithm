@@ -3,7 +3,7 @@ package alphaAlgorithm
 import misc.{FullPairsInfoMap, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
-import relations.FindFollowRelation
+import relations.{FindFollowRelation, FindLogRelations}
 
 object AlphaAlgorithm {
 
@@ -12,6 +12,7 @@ object AlphaAlgorithm {
   implicit def pairInfoListEncoder: org.apache.spark.sql.Encoder[List[PairInfo]] = org.apache.spark.sql.Encoders.kryo[List[PairInfo]]
   implicit def pairsMapEncoder: org.apache.spark.sql.Encoder[FullPairsInfoMap] = org.apache.spark.sql.Encoders.kryo[FullPairsInfoMap]
   implicit def pairInfoTuple2Encoder: org.apache.spark.sql.Encoder[(PairNotation,PairNotation)] = org.apache.spark.sql.Encoders.kryo[(PairNotation,PairNotation)]
+  implicit def setPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -26,6 +27,7 @@ object AlphaAlgorithm {
 
   def main(args: Array[String]): Unit = {
     val followRelation: FindFollowRelation = new FindFollowRelation()
+    val findLogRelations: FindLogRelations = new FindLogRelations()
 
     Logger.getLogger("org").setLevel(Level.ERROR)
     val spark = SparkSession
@@ -43,23 +45,34 @@ object AlphaAlgorithm {
     import spark.implicits._
     val tracesDS = traces.toDS()
 
-/*    val tracesTuple = tracesDS
-          .map(traces => followRelation.findFollowRelation(traces))
-          .map(x=>x.getPairsMap())
-          .flatMap(map=>map.toSeq)  //map to collection of tuples
-          .map(x=>x._1+","+x._2._1.pairNotation+","+x._2._2.pairNotation)*/
-
-    val tracesTuple = tracesDS
+    /**
+      * pairInfo is in the following form
+      * AB,PairNotation(DIRECT, FOLLOW)
+      * AB,PairNotation(INVERSE, FOLLOW)
+      */
+    val pairInfo = tracesDS
       .map(traces => followRelation.findFollowRelation(traces))
       .map(x=>x.getPairsMap())
       .flatMap(map=>map.toSeq)  //map to collection of tuples
       .map(x=> List(new PairInfo((x._1, new PairNotation(x._2._1.pairNotation))), new PairInfo((x._1, new PairNotation(x._2._2.pairNotation)))))
       .flatMap(x=>x.toSeq)
 
-    tracesTuple.foreach(x=>println(x.toString))
+    pairInfo.cache()
 
-    //cache data
-    tracesTuple.cache()
+    /**
+      * relations in  the following form
+      * (FB,CAUSALITY)
+      * (BB,NEVER_FOLLOW)
+      * (AB,PARALLELISM)
+      */
+    val relations = pairInfo
+      .groupByKey(x=> x.getPairName())
+      .mapGroups{case(k, iter) => (k, iter.map(x => x.getPairNotation()).toSet)}    //TODO unique objects must be inserted
+      .map(x=>findLogRelations.findRelations(x))
+
+    relations.cache()
+
+    relations.foreach(x=>println(x.toString))
 
     // Stop the session
     spark.stop()
