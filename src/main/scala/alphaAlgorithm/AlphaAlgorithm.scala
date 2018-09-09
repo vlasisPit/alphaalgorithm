@@ -58,7 +58,7 @@ object AlphaAlgorithm {
       .flatMap(x=>x.toSeq)
 
     pairInfo.cache()
-
+    pairInfo.foreach(x=>println(x.toString))
     /**
       * relations in  the following form
       * (FB,CAUSALITY)
