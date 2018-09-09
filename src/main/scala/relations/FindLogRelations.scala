@@ -31,6 +31,7 @@ class FindLogRelations() extends Serializable {
     } else if (directFollow.length==0 && inverseFollow.length==0) {
       return (pairInfo._1, Relation.NEVER_FOLLOW.toString);
     } else {
+      //this never must happen. Default case
       return (pairInfo._1, Relation.FOLLOW.toString);
     }
   }
