@@ -1,9 +1,11 @@
 package alphaAlgorithm
 
-import misc.{FullPairsInfoMap, PairInfo, PairNotation}
+import java.util
+
+import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation, Relation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
-import relations.{FindFollowRelation, FindLogRelations}
+import relations.{FindCausalGroups, FindFollowRelation, FindLogRelations}
 import tools.TraceTools
 
 //TODO event must be a generic, not only String type
@@ -16,6 +18,9 @@ object AlphaAlgorithm {
   implicit def pairsMapEncoder: org.apache.spark.sql.Encoder[FullPairsInfoMap] = org.apache.spark.sql.Encoders.kryo[FullPairsInfoMap]
   implicit def pairInfoTuple2Encoder: org.apache.spark.sql.Encoder[(PairNotation,PairNotation)] = org.apache.spark.sql.Encoders.kryo[(PairNotation,PairNotation)]
   implicit def setOfPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
+  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[String]] = org.apache.spark.sql.Encoders.kryo[Pair[String]]
+  implicit def causalGroupEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
+  //implicit def causalGroupSetEncoder: org.apache.spark.sql.Encoder[CausalGroup[Set[String]]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[Set[String]]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -24,6 +29,7 @@ object AlphaAlgorithm {
   def main(args: Array[String]): Unit = {
     val followRelation: FindFollowRelation = new FindFollowRelation()
     val findLogRelations: FindLogRelations = new FindLogRelations()
+    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups() //String is event type
     val traceTools: TraceTools = new TraceTools()
 
     Logger.getLogger("org").setLevel(Level.ERROR)
@@ -36,7 +42,7 @@ object AlphaAlgorithm {
 
     //traces like (case1, List(A,B,C,D))
     val traces = spark.sparkContext
-      .textFile("src/main/resources/log1.txt")
+      .textFile("src/main/resources/log2.txt")
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
@@ -83,6 +89,37 @@ object AlphaAlgorithm {
     logRelations.cache()
 
     logRelations.foreach(x=>println(x.toString))
+
+    //compute causal groups - Step 4
+    //directCausalGroups are all causality relations because they are by default causal group
+    val directCausalGroups = logRelations
+        .filter(x=>x._2==Relation.CAUSALITY.toString)
+        .map(x=>new Pair(x._1.charAt(0).toString, x._1.charAt(1).toString)) //TODO delete after refactoring for Pairs
+        .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
+
+    directCausalGroups.foreach(x=>println(x.toString))
+
+    //val causalGroups = findCausalGroups.enrichCausalGroups(directCausalGroups)
+
+    val causalGroupsFromLeft = directCausalGroups
+        .groupByKey(x=>x.getFirstGroup())
+        .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
+        .filter(x=>x._2.size>1)
+        .map(x=>new CausalGroup(x._1, x._2))
+
+    causalGroupsFromLeft.foreach(x=>println(x.toString))
+
+    val causalGroupsFromRight = directCausalGroups
+      .map(x=>new CausalGroup(x.getSecondGroup(), x.getFirstGroup()))
+      .groupByKey(x=>x.getFirstGroup())
+      .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
+      .filter(x=>x._2.size>1)
+      .map(x=>new CausalGroup(x._2, x._1))
+
+    causalGroupsFromRight.foreach(x=>println(x.toString))
+
+    val causalGroups : List[CausalGroup[String]]  = directCausalGroups.collect.toList
+
 
     // Stop the session
     spark.stop()
