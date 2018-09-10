@@ -7,6 +7,7 @@ import relations.{FindFollowRelation, FindLogRelations}
 import tools.TraceTools
 
 //TODO event must be a generic, not only String type
+//TODO refactor main AlphaAlgorithm
 object AlphaAlgorithm {
 
   implicit def mapPairEncoder: org.apache.spark.sql.Encoder[Map[String, (PairNotation, PairNotation)]] = org.apache.spark.sql.Encoders.kryo[Map[String, (PairNotation, PairNotation)]]
@@ -60,16 +61,16 @@ object AlphaAlgorithm {
       * AB,PairNotation(INVERSE, FOLLOW)
       */
     val pairInfo = tracesDS
-      .map(traces => followRelation.findFollowRelation(traces))
+      .map(traces => followRelation.findFollowRelation(traces, pairsToExamine))
       .map(x=>x.getPairsMap())
       .flatMap(map=>map.toSeq)  //map to collection of tuples
       .map(x=> List(new PairInfo((x._1, new PairNotation(x._2._1.pairNotation))), new PairInfo((x._1, new PairNotation(x._2._2.pairNotation)))))
       .flatMap(x=>x.toSeq)
 
     pairInfo.cache()
-    pairInfo.foreach(x=>println(x.toString))
+
     /**
-      * relations in  the following form
+      * relations in  the following form, Footprint graph
       * (FB,CAUSALITY)
       * (BB,NEVER_FOLLOW)
       * (AB,PARALLELISM)

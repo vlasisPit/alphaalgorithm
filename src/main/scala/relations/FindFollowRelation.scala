@@ -16,8 +16,7 @@ class FindFollowRelation() extends Serializable {
     * @param traceWithCaseId
     * @return
     */
-  def findFollowRelation(traceWithCaseId: (String, List[String])):FullPairsInfoMap = {
-    val pairsToExamine = constructPairsForComputation(traceWithCaseId._2)
+  def findFollowRelation(traceWithCaseId: (String, List[String]), pairsToExamine: List[String]):FullPairsInfoMap = {
     var pairInfoMap = pairInfoInit(pairsToExamine)
 
     for( i <- 0 to traceWithCaseId._2.length-2){
@@ -57,19 +56,4 @@ class FindFollowRelation() extends Serializable {
     return pairInfo
   }
 
-  def constructPairsForComputation(trace: List[String]): List[String] = {
-    val traceWithNoDuplicates = trace.toSet
-    var tempTrace = traceWithNoDuplicates.toList
-    var pairs = new ListBuffer[String]()
-
-    for( i <- 0 to traceWithNoDuplicates.toList.size-1) {
-      for( j <- 0 to tempTrace.length-1) {
-        val tuple2 = traceWithNoDuplicates.toList(i)+tempTrace(j)
-        pairs = pairs += tuple2
-      }
-      tempTrace = tempTrace.tail
-    }
-
-    return pairs.toList
-  }
 }

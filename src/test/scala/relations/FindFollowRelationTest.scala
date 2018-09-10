@@ -9,8 +9,9 @@ class FindFollowRelationTest extends FunSuite {
     val followRelation: FindFollowRelation = new FindFollowRelation()
 
     val trace: (String, List[String]) = ("case1", List("A", "B", "A", "C", "D"))
+    val pairsToExamine: List[String] = List("AA", "AB", "AC", "AD", "BB", "BC", "BD", "AC", "AD", "CD")
 
-    val pairs: FullPairsInfoMap = followRelation.findFollowRelation(trace)
+    val pairs: FullPairsInfoMap = followRelation.findFollowRelation(trace, pairsToExamine)
 
     assert(pairs.getPairsMap()("AA")._1.getDirectionality()==Directionality.DIRECT)
     assert(pairs.getPairsMap()("AA")._2.getDirectionality()==Directionality.INVERSE)
