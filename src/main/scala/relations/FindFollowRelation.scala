@@ -39,22 +39,6 @@ class FindFollowRelation() extends Serializable {
     return new FullPairsInfoMap(pairInfoMap)
   }
 
-  def constructPairsForComputation(trace: List[String]): List[String] = {
-    val traceWithNoDuplicates = trace.toSet
-    var tempTrace = traceWithNoDuplicates.toList
-    var pairs = new ListBuffer[String]()
-
-    for( i <- 0 to traceWithNoDuplicates.toList.size-1) {
-      for( j <- 0 to tempTrace.length-1) {
-        val tuple2 = traceWithNoDuplicates.toList(i)+tempTrace(j)
-        pairs = pairs += tuple2
-      }
-      tempTrace = tempTrace.tail
-    }
-
-    return pairs.toList
-  }
-
   def checkIfPairExists(pair: String, pairInfoMap: Map[String, (PairNotation, PairNotation)]) : Boolean = {
     return pairInfoMap.keys.toList.contains(pair)
   }
@@ -73,4 +57,19 @@ class FindFollowRelation() extends Serializable {
     return pairInfo
   }
 
+  def constructPairsForComputation(trace: List[String]): List[String] = {
+    val traceWithNoDuplicates = trace.toSet
+    var tempTrace = traceWithNoDuplicates.toList
+    var pairs = new ListBuffer[String]()
+
+    for( i <- 0 to traceWithNoDuplicates.toList.size-1) {
+      for( j <- 0 to tempTrace.length-1) {
+        val tuple2 = traceWithNoDuplicates.toList(i)+tempTrace(j)
+        pairs = pairs += tuple2
+      }
+      tempTrace = tempTrace.tail
+    }
+
+    return pairs.toList
+  }
 }
