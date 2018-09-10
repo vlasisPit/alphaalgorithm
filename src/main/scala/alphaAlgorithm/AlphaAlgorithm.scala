@@ -15,7 +15,7 @@ object AlphaAlgorithm {
   implicit def pairInfoListEncoder: org.apache.spark.sql.Encoder[List[PairInfo]] = org.apache.spark.sql.Encoders.kryo[List[PairInfo]]
   implicit def pairsMapEncoder: org.apache.spark.sql.Encoder[FullPairsInfoMap] = org.apache.spark.sql.Encoders.kryo[FullPairsInfoMap]
   implicit def pairInfoTuple2Encoder: org.apache.spark.sql.Encoder[(PairNotation,PairNotation)] = org.apache.spark.sql.Encoders.kryo[(PairNotation,PairNotation)]
-  implicit def setPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
+  implicit def setOfPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -36,7 +36,7 @@ object AlphaAlgorithm {
 
     //traces like (case1, List(A,B,C,D))
     val traces = spark.sparkContext
-      .textFile("src/main/resources/log.txt")
+      .textFile("src/main/resources/log1.txt")
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
@@ -75,14 +75,14 @@ object AlphaAlgorithm {
       * (BB,NEVER_FOLLOW)
       * (AB,PARALLELISM)
       */
-    val relations = pairInfo
+    val logRelations = pairInfo
       .groupByKey(x=> x.getPairName())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getPairNotation()).toSet)}    //TODO unique objects must be inserted
-      .map(x=>findLogRelations.findRelations(x))
+      .map(x=>findLogRelations.findFootPrintGraph(x))
 
-    relations.cache()
+    logRelations.cache()
 
-    relations.foreach(x=>println(x.toString))
+    logRelations.foreach(x=>println(x.toString))
 
     // Stop the session
     spark.stop()

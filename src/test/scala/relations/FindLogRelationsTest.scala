@@ -14,7 +14,7 @@ class FindLogRelationsTest extends FunSuite {
         new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(String, String) = logRelations.findRelations(pairInfo)
+    val relation:(String, String) = logRelations.findFootPrintGraph(pairInfo)
 
     assert(relation._2.equals(Relation.PARALLELISM.toString))
   }
@@ -27,7 +27,7 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(String, String) = logRelations.findRelations(pairInfo)
+    val relation:(String, String) = logRelations.findFootPrintGraph(pairInfo)
 
     assert(relation._2.equals(Relation.CAUSALITY.toString))
   }
@@ -40,7 +40,7 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.DIRECT ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(String, String) = logRelations.findRelations(pairInfo)
+    val relation:(String, String) = logRelations.findFootPrintGraph(pairInfo)
 
     assert(relation._1.equals("BE"))
     assert(relation._2.equals(Relation.CAUSALITY.toString))
@@ -54,7 +54,7 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(String, String) = logRelations.findRelations(pairInfo)
+    val relation:(String, String) = logRelations.findFootPrintGraph(pairInfo)
 
     assert(relation._2.equals(Relation.NEVER_FOLLOW.toString))
   }
