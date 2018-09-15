@@ -8,6 +8,7 @@ import tools.TraceTools
 
 //TODO event must be a generic, not only String type
 //TODO refactor main AlphaAlgorithm
+//TODO check for a better implementation of encoders
 object AlphaAlgorithm {
 
   implicit def mapPairEncoder: org.apache.spark.sql.Encoder[Map[String, (PairNotation, PairNotation)]] = org.apache.spark.sql.Encoders.kryo[Map[String, (PairNotation, PairNotation)]]
@@ -38,7 +39,7 @@ object AlphaAlgorithm {
 
     //traces like (case1, List(A,B,C,D))
     val traces = spark.sparkContext
-      .textFile("src/main/resources/log2.txt")
+      .textFile("src/main/resources/log1.txt")
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
