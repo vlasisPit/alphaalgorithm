@@ -1,6 +1,6 @@
 package relations
 
-import misc.{Directionality, PairNotation, Relation}
+import misc.{Directionality, PairNotation, Relation, Pair}
 
 /**
   * Find log relations
@@ -11,7 +11,7 @@ import misc.{Directionality, PairNotation, Relation}
 @SerialVersionUID(100L)
 class FindLogRelations() extends Serializable {
 
-  def findFootPrintGraph(pairInfo: (String, Set[PairNotation])): (String, String) = {
+  def findFootPrintGraph[T](pairInfo: (Pair[T], Set[PairNotation])): (Pair[T], String) = {
     val directFollow = pairInfo._2.toSeq
       .filter(x=> x.getDirectionality()==Directionality.DIRECT && x.getRelation()==Relation.FOLLOW)
       .toList
@@ -25,7 +25,7 @@ class FindLogRelations() extends Serializable {
     } else if (directFollow.nonEmpty && inverseFollow.isEmpty) {
       (pairInfo._1, Relation.CAUSALITY.toString)
     } else if (directFollow.isEmpty && inverseFollow.nonEmpty) {
-      (pairInfo._1.reverse, Relation.CAUSALITY.toString)
+      (new Pair(pairInfo._1.member2, pairInfo._1.member1), Relation.CAUSALITY.toString)
     } else if (directFollow.isEmpty && inverseFollow.isEmpty) {
       (pairInfo._1, Relation.NEVER_FOLLOW.toString)
     } else {
