@@ -28,16 +28,15 @@ import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
 @SerialVersionUID(100L)
 class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Serializable {
 
+  val spark = SparkSession.builder().getOrCreate()
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[T]] = org.apache.spark.sql.Encoders.kryo[Pair[T]]
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[T]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[T]]
   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[T]] = org.apache.spark.sql.Encoders.kryo[Set[T]]
+  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[T]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[T]]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
-
-
-
 
   def extractCausalGroups():List[CausalGroup[T]] = {
     val directCausalGroups = logRelations
@@ -70,8 +69,49 @@ class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Seria
             causalGroupsFromRight.collect.toList
   }
 
-/*  def checkNotFollowRelation(x: CausalGroup[T]): List[CausalGroup[T]] = {
+  /**
+    * From causal groups provided, we must check if the relation NEVER_FOLLOW is valid.
+    * If not the causal group must be broken to more groups.
+    * For example suppose we have a causal group
+    * {a} -> {b,c,e}
+    * The next step is to check if for all events in {b,c,e}, all events relations are NEVER_FOLLOW.
+    * If yes, {b,c,e} stay as is.
+    * If not the algorithm must break down the set in more sets for which NEVER_FOLLOW is valid.
+    *
+    * @param causalGroupNotCompleted
+    * @return
+    */
+  def checkNeverFollowRelation(causalGroupNotCompleted: CausalGroup[T]): List[CausalGroup[T]] = {
+    //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
+    val secondMembers = causalGroupNotCompleted.getSecondGroup().toList
 
-  }*/
+    import spark.implicits._
+    val possibleCombinations : PossibleCombinations[T] = new PossibleCombinations(secondMembers);
+    val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations().toDS()
+    allPossibleCombinations.filter(x=>notNeverFollowRelationExists(x))
+
+    return null
+  }
+
+  /**
+    * If there is at least one not-NeverFollow relation then the group must be removed
+    * Example lets suppose possibleGroup= {b,c,e} and there is b||c, b#e and e#c.
+    * Then the output must be {b,e} and {c,e}
+    * @param possibleGroup
+    * @return
+    */
+  def notNeverFollowRelationExists(possibleGroup: Set[T]): Boolean = {
+    val allPossiblePairs = for(x <- possibleGroup; y <- possibleGroup) yield (x, y)
+    val logRelationsDataframe = logRelations.toDF("pair","relation")
+    logRelationsDataframe.createOrReplaceTempView("relations")
+
+    import spark.sql
+    val neverFollowPair = allPossiblePairs.map(pair=>sql("SELECT relation FROM relations WHERE pair =" + pair))
+      .map(relation => relation.col("relation"))
+      .map(relation => relation.getItem())
+      .find(relation=> !relation==Relation.NEVER_FOLLOW.toString) //other than Relation.NEVER_FOLLOW
+
+    if (neverFollowPair.isEmpty) true else false
+  }
 
 }

@@ -34,7 +34,7 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
 
   import spark.implicits._
 
-  test("Check FindCausalGroups correct functionality - Log 1") {
+ /* test("Check FindCausalGroups correct functionality - Log 1") {
     val logRelations = Seq(
       (new Pair[String]("E", "E"), Relation.NEVER_FOLLOW.toString),
       (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
@@ -96,6 +96,40 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
     assert(causalGroups.size==6)
+  }*/
+
+/*  test("Find potential causal groups") {
+    val logRelations = Seq(
+      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("B", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val events: List[String] = List("B", "C", "E")
+
+    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
+    val potentialCausalGroups = findCausalGroups.potentialCausalGroups(events)
+    print(potentialCausalGroups)
+  }*/
+
+  test("Check if a NeverFollow Relation") {
+    val logRelations = Seq(
+      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("B", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val groupEvents: Set[String] = Set("B", "C", "E")
+    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
+
+    val notNeverFollowExists = findCausalGroups.notNeverFollowRelationExists(groupEvents)
+    assert(notNeverFollowExists==false)
   }
 
 }
