@@ -32,6 +32,7 @@ class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Seria
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[T]] = org.apache.spark.sql.Encoders.kryo[Pair[T]]
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[T]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[T]]
   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[T]] = org.apache.spark.sql.Encoders.kryo[Set[T]]
+  implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
   implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[T]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[T]]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
@@ -101,16 +102,24 @@ class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Seria
     * @return
     */
   def notNeverFollowRelationExists(possibleGroup: Set[T]): Boolean = {
+    import spark.sql
+    import org.apache.spark.sql.functions.udf
+    val toStringMine = udf((payload: Array[Byte]) => new String(payload))
+
     val allPossiblePairs = for(x <- possibleGroup; y <- possibleGroup) yield (x, y)
-    val logRelationsDataframe = logRelations.toDF("pair","relation")
+    val logRelationsDataframe = logRelations
+        .toDF("pair", "relation")
     logRelationsDataframe.createOrReplaceTempView("relations")
 
-    import spark.sql
-    val neverFollowPair = allPossiblePairs.map(pair=>sql("SELECT relation FROM relations WHERE pair =" + pair))
-      .map(relation => relation.col("relation"))
-      .map(relation => relation.getItem())
-      .find(relation=> !relation==Relation.NEVER_FOLLOW.toString) //other than Relation.NEVER_FOLLOW
+    val newCol = logRelationsDataframe.withColumn("pair", toStringMine(logRelationsDataframe("pair")))
 
+    newCol.show()
+
+
+    val neverFollowPair = allPossiblePairs.map(pair=>sql("SELECT relation FROM relations "))
+      .map(relation => relation.col("relation"))
+//        .map(relation => relation.getItem())
+    /*      .find(relation=> !relation==Relation.NEVER_FOLLOW.toString) //other than Relation.NEVER_FOLLOW*/
     if (neverFollowPair.isEmpty) true else false
   }
 
