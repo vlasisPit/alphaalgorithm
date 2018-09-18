@@ -1,6 +1,6 @@
 package alphaAlgorithm
 
-import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
+import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation, Relation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
 import relations.{FindCausalGroups, FindFollowRelation, FindLogRelations}
@@ -17,7 +17,7 @@ object AlphaAlgorithm {
   implicit def pairsMapEncoder: org.apache.spark.sql.Encoder[FullPairsInfoMap] = org.apache.spark.sql.Encoders.kryo[FullPairsInfoMap]
   implicit def pairInfoTuple2Encoder: org.apache.spark.sql.Encoder[(PairNotation,PairNotation)] = org.apache.spark.sql.Encoders.kryo[(PairNotation,PairNotation)]
   implicit def setOfPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
-  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[String]] = org.apache.spark.sql.Encoders.kryo[Pair[String]]
+  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
   implicit def causalGroupEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
@@ -89,7 +89,7 @@ object AlphaAlgorithm {
 
     //compute causal groups - Step 4
     //directCausalGroups are all causality relations because they are by default causal group
-    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups(logRelations) //String is event type
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations) //String is event type
     val causalGroups = findCausalGroups.extractCausalGroups()
 
     // Stop the session

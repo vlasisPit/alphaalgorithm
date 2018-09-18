@@ -15,7 +15,7 @@ import org.scalatest.{BeforeAndAfter, FunSuite}
   */
 class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
 
-  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[String]] = org.apache.spark.sql.Encoders.kryo[Pair[String]]
+  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
   implicit def tuple2[A1, A2](
@@ -115,21 +115,38 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     print(potentialCausalGroups)
   }*/
 
-  test("Check if a NeverFollow Relation") {
+  test("Check if a NeverFollow Relation exists. All relations are never follow") {
     val logRelations = Seq(
-      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString))
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString))
       .toDS();
 
     val groupEvents: Set[String] = Set("B", "C", "E")
-    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
 
-    val notNeverFollowExists = findCausalGroups.notNeverFollowRelationExists(groupEvents)
-    assert(notNeverFollowExists==false)
+    val allRelationsAreNeverFollow = findCausalGroups.allRelationsAreNeverFollow(groupEvents)
+    assert(allRelationsAreNeverFollow==true)
+  }
+
+  test("Check if a NeverFollow Relation exists. There is one PARALLELISM relation") {
+    val logRelations = Seq(
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "E"), Relation.PARALLELISM.toString),
+      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val groupEvents: Set[String] = Set("B", "C", "E")
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+
+    val allRelationsAreNeverFollow = findCausalGroups.allRelationsAreNeverFollow(groupEvents)
+    assert(allRelationsAreNeverFollow==false)
   }
 
 }

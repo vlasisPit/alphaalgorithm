@@ -1,7 +1,7 @@
 package relations
 
 import misc.{CausalGroup, Pair, Relation}
-import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
+import org.apache.spark.sql._
 
 /**
   * Accept us input footprint's graph data. In the following form
@@ -26,20 +26,24 @@ import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
   * @tparam T
   */
 @SerialVersionUID(100L)
-class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Serializable {
+class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serializable {
 
   val spark = SparkSession.builder().getOrCreate()
-  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair[T]] = org.apache.spark.sql.Encoders.kryo[Pair[T]]
-  implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[T]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[T]]
-  implicit def setEncoder: org.apache.spark.sql.Encoder[Set[T]] = org.apache.spark.sql.Encoders.kryo[Set[T]]
+  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).collect.toList
+
+  implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
+  implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
+  implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
   implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
-  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[T]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[T]]]
+  implicit def rowEncoder: org.apache.spark.sql.Encoder[Row] = org.apache.spark.sql.Encoders.kryo[Row]
+  implicit def pairStringEncoder: org.apache.spark.sql.Encoder[(Pair, String)] = org.apache.spark.sql.Encoders.kryo[(Pair, String)]
+  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
 
-  def extractCausalGroups():List[CausalGroup[T]] = {
+  def extractCausalGroups():List[CausalGroup[String]] = {
     val directCausalGroups = logRelations
       .filter(x=>x._2==Relation.CAUSALITY.toString)
       .map(x=>x._1)
@@ -82,16 +86,18 @@ class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Seria
     * @param causalGroupNotCompleted
     * @return
     */
-  def checkNeverFollowRelation(causalGroupNotCompleted: CausalGroup[T]): List[CausalGroup[T]] = {
+  def checkNeverFollowRelation(causalGroupNotCompleted: CausalGroup[String]): List[CausalGroup[String]] = {
     //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
     val secondMembers = causalGroupNotCompleted.getSecondGroup().toList
 
     import spark.implicits._
-    val possibleCombinations : PossibleCombinations[T] = new PossibleCombinations(secondMembers);
+    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(secondMembers)
     val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations().toDS()
-    allPossibleCombinations.filter(x=>notNeverFollowRelationExists(x))
+    val groups = allPossibleCombinations.filter(x=>allRelationsAreNeverFollow(x))
+      .map(x => new CausalGroup[String](causalGroupNotCompleted.getFirstGroup(), x))
+      .collect().toList
 
-    return null
+    return groups
   }
 
   /**
@@ -101,26 +107,15 @@ class FindCausalGroups[T](val logRelations: Dataset[(Pair[T], T)]) extends Seria
     * @param possibleGroup
     * @return
     */
-  def notNeverFollowRelationExists(possibleGroup: Set[T]): Boolean = {
-    import spark.sql
-    import org.apache.spark.sql.functions.udf
-    val toStringMine = udf((payload: Array[Byte]) => new String(payload))
+  def allRelationsAreNeverFollow(possibleGroup: Set[String]): Boolean = {
+    val allPossiblePairs = for {
+      (x, idxX) <- possibleGroup.zipWithIndex
+      (y, idxY) <- possibleGroup.zipWithIndex
+      if idxX < idxY
+    } yield new Pair(x,y)
+    val numberOfNeverFollowPairs = allPossiblePairs.filter(x=> neverFollowPairs.contains(x)).toList.length
 
-    val allPossiblePairs = for(x <- possibleGroup; y <- possibleGroup) yield (x, y)
-    val logRelationsDataframe = logRelations
-        .toDF("pair", "relation")
-    logRelationsDataframe.createOrReplaceTempView("relations")
-
-    val newCol = logRelationsDataframe.withColumn("pair", toStringMine(logRelationsDataframe("pair")))
-
-    newCol.show()
-
-
-    val neverFollowPair = allPossiblePairs.map(pair=>sql("SELECT relation FROM relations "))
-      .map(relation => relation.col("relation"))
-//        .map(relation => relation.getItem())
-    /*      .find(relation=> !relation==Relation.NEVER_FOLLOW.toString) //other than Relation.NEVER_FOLLOW*/
-    if (neverFollowPair.isEmpty) true else false
+    if (numberOfNeverFollowPairs == allPossiblePairs.size) true else false
   }
 
 }

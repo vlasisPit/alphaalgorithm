@@ -1,30 +1,39 @@
 package misc
 
+/**
+  * Pair members should be strings and not Generics, because we are going to use them as keys
+  * @param member1
+  * @param member2
+  */
 @SerialVersionUID(100L)
-class Pair[T] (val member1: T, val member2: T) extends Serializable {
+class Pair (val member1: String, val member2: String) extends Serializable {
 
-  def getFirstMember(): T = {
+  def getFirstMember(): String = {
     return member1
   }
 
-  def getSecondMember(): T = {
+  def getSecondMember(): String = {
     return member2
   }
 
-  def canEqual(a: Any) = a.isInstanceOf[T]
+  def canEqual(a: Any) = a.isInstanceOf[Pair]
+
   override def equals(that: Any): Boolean =
     that match {
-      case that: String => that.canEqual(this) && this.hashCode == that.hashCode
+      case that: Pair => that.canEqual(this) &&
+        this.getFirstMember() == that.getFirstMember() &&
+        this.getSecondMember() == that.getSecondMember() &&
+        this.hashCode == that.hashCode
       case _ => false
     }
 
   override def hashCode: Int = {
     val prime = 31
     var result = 1
-    result = prime * result + (if (member1 == null) 0 else member1.hashCode)
-    result = prime * result + (if (member2 == null) 0 else member2.hashCode)
+    result = prime * result + member1.hashCode()
+    result = prime * result + member2.hashCode()
     return result
   }
 
-  override def toString = s"Pair($member1, $member2)"
+  override def toString = s"$member1$member2"
 }

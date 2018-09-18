@@ -11,7 +11,7 @@ import misc.{Directionality, PairNotation, Relation, Pair}
 @SerialVersionUID(100L)
 class FindLogRelations() extends Serializable {
 
-  def findFootPrintGraph[T](pairInfo: (Pair[T], Set[PairNotation])): (Pair[T], String) = {
+  def findFootPrintGraph[T](pairInfo: (Pair, Set[PairNotation])): (Pair, String) = {
     val directFollow = pairInfo._2.toSeq
       .filter(x=> x.getDirectionality()==Directionality.DIRECT && x.getRelation()==Relation.FOLLOW)
       .toList
