@@ -34,26 +34,26 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
 
   import spark.implicits._
 
- /* test("Check FindCausalGroups correct functionality - Log 1") {
+  test("Check FindCausalGroups correct functionality - Log 1") {
     val logRelations = Seq(
-      (new Pair[String]("E", "E"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "C"), Relation.PARALLELISM.toString),
-      (new Pair[String]("E", "D"), Relation.CAUSALITY.toString),
-      (new Pair[String]("B", "D"), Relation.CAUSALITY.toString),
-      (new Pair[String]("A", "E"), Relation.CAUSALITY.toString),
-      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "B"), Relation.CAUSALITY.toString),
-      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("C", "E"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "E"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "C"), Relation.CAUSALITY.toString),
-      (new Pair[String]("C", "D"), Relation.CAUSALITY.toString))
+      (new Pair("E", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.PARALLELISM.toString),
+      (new Pair("E", "D"), Relation.CAUSALITY.toString),
+      (new Pair("B", "D"), Relation.CAUSALITY.toString),
+      (new Pair("A", "E"), Relation.CAUSALITY.toString),
+      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "B"), Relation.CAUSALITY.toString),
+      (new Pair("C", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "B"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "C"), Relation.CAUSALITY.toString),
+      (new Pair("C", "D"), Relation.CAUSALITY.toString))
       .toDS();
 
-    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
     val causalGroups = findCausalGroups.extractCausalGroups()
 
     assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("D"))))
@@ -62,58 +62,43 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
     assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "E"))))
     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C", "E"))))
-
+    assert(causalGroups.contains(new CausalGroup[String](Set("B", "E"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C", "E"), Set("D"))))
+    assert(causalGroups.size==10)
   }
 
-  test("Check FindCausalGroups correct functionality - Log 2") {
-    val logRelations = Seq(
-      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "D"), Relation.CAUSALITY.toString),
-      (new Pair[String]("B", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "C"), Relation.CAUSALITY.toString),
-      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "B"), Relation.CAUSALITY.toString),
-      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("C", "D"), Relation.CAUSALITY.toString))
-      .toDS();
+   test("Check FindCausalGroups correct functionality - Log 2") {
+     val logRelations = Seq(
+       (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("B", "D"), Relation.CAUSALITY.toString),
+       (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("C", "C"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("A", "C"), Relation.CAUSALITY.toString),
+       (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("A", "B"), Relation.CAUSALITY.toString),
+       (new Pair("B", "B"), Relation.NEVER_FOLLOW.toString),
+       (new Pair("C", "D"), Relation.CAUSALITY.toString))
+       .toDS();
 
-    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
-    val causalGroups = findCausalGroups.extractCausalGroups()
+     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+     val causalGroups = findCausalGroups.extractCausalGroups()
 
-    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "C"))))
-    assert(causalGroups.contains(new CausalGroup[String](Set("B", "C"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "C"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("B", "C"), Set("D"))))
 
-    //false assertions
-    assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
-    assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
+     //false assertions
+     assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
+     assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
-    assert(causalGroups.size==6)
-  }*/
-
-/*  test("Find potential causal groups") {
-    val logRelations = Seq(
-      (new Pair[String]("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("C", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair[String]("B", "B"), Relation.NEVER_FOLLOW.toString))
-      .toDS();
-
-    val events: List[String] = List("B", "C", "E")
-
-    val findCausalGroups: FindCausalGroups[String] = new FindCausalGroups[String](logRelations)
-    val potentialCausalGroups = findCausalGroups.potentialCausalGroups(events)
-    print(potentialCausalGroups)
-  }*/
+     assert(causalGroups.size==6)
+   }
 
   test("Check if a NeverFollow Relation exists. All relations are never follow") {
     val logRelations = Seq(
@@ -149,4 +134,62 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(allRelationsAreNeverFollow==false)
   }
 
+  test("Check if a NeverFollow Relation exists. All relations are never follow for 4 event") {
+    val logRelations = Seq(
+      (new Pair("A", "B"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "D"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val groupEvents: Set[String] = Set("A", "B", "C", "D")
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+
+    val allRelationsAreNeverFollow = findCausalGroups.allRelationsAreNeverFollow(groupEvents)
+    assert(allRelationsAreNeverFollow==true)
+  }
+
+  test("NeverFollow Relation is not valid. There is one PARALLELISM relation. Group must be broken") {
+    val logRelations = Seq(
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.PARALLELISM.toString),
+      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val groupEvents: Set[String] = Set("B", "C", "E")
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+
+    val newGroups = findCausalGroups.checkIfNeverFollowRelationIsValidAndBreakTheGroup(groupEvents)
+    assert(newGroups.contains(Set("C", "E")))
+    assert(newGroups.contains(Set("B", "E")))
+
+    assert(newGroups.size==2)
+  }
+
+  test("NeverFollow Relation is valid. Group must not be broken") {
+    val logRelations = Seq(
+      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString))
+      .toDS();
+
+    val groupEvents: Set[String] = Set("B", "C", "E")
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+
+    val newGroups = findCausalGroups.checkIfNeverFollowRelationIsValidAndBreakTheGroup(groupEvents)
+    assert(newGroups.contains(Set("B", "C", "E")))
+    assert(newGroups.contains(Set("B", "C")))
+    assert(newGroups.contains(Set("B", "E")))
+    assert(newGroups.contains(Set("C", "E")))
+
+    assert(newGroups.size==4)
+  }
 }

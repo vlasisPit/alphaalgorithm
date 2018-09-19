@@ -28,7 +28,6 @@ import org.apache.spark.sql._
 @SerialVersionUID(100L)
 class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serializable {
 
-  val spark = SparkSession.builder().getOrCreate()
   val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).collect.toList
 
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
@@ -56,7 +55,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
-      //.map(x=>checkNotFollowRelation(x))
+      .flatMap(x=> createFinalCausalGroupsLeft(x))
 
     causalGroupsFromLeft.foreach(x=>println(x.toString))
 
@@ -65,13 +64,36 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .groupByKey(x=>x.getFirstGroup())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
       .filter(x=>x._2.size>1)
-      .map(x=>new CausalGroup(x._2, x._1))
+      .map(x=>new CausalGroup(x._1, x._2))
+      .flatMap(x=> createFinalCausalGroupsRight(x))
 
     causalGroupsFromRight.foreach(x=>println(x.toString))
 
     return directCausalGroups.collect.toList :::
             causalGroupsFromLeft.collect.toList :::
             causalGroupsFromRight.collect.toList
+  }
+
+  /**
+    * Input a causal group which we have to inspect for breaking to more groups,
+    * if NeverFollow relation is not valid
+    * Example causal group {a} -> {b,c,e}
+    * to {a} -> {b,e} and {a} -> {c,e}
+    */
+  def createFinalCausalGroupsLeft(causalGroup: CausalGroup[String]): List[CausalGroup[String]] = {
+    return checkIfNeverFollowRelationIsValidAndBreakTheGroup(causalGroup.getSecondGroup())
+      .map(x => new CausalGroup(causalGroup.getFirstGroup(), x))
+  }
+
+  /**
+    * Input a causal group which we have to inspect for breaking to more groups,
+    * if NeverFollow relation is not valid
+    * Example causal group {b,c,e} ->  {a}
+    * to {b,e} -> {d} and {c,e} -> {d}
+    */
+  def createFinalCausalGroupsRight(causalGroup: CausalGroup[String]): List[CausalGroup[String]] = {
+    return checkIfNeverFollowRelationIsValidAndBreakTheGroup(causalGroup.getSecondGroup())
+      .map(x => new CausalGroup(x, causalGroup.getFirstGroup()))
   }
 
   /**
@@ -84,17 +106,15 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     * If not the algorithm must break down the set in more sets for which NEVER_FOLLOW is valid.
     *
     * @param causalGroupNotCompleted
-    * @return
     */
-  def checkNeverFollowRelation(causalGroupNotCompleted: CausalGroup[String]): List[CausalGroup[String]] = {
+  def checkIfNeverFollowRelationIsValidAndBreakTheGroup(events: Set[String]): List[Set[String]] = {
     //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
-    val secondMembers = causalGroupNotCompleted.getSecondGroup().toList
-
+    val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(secondMembers)
+    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations[String](events.toList)
     val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations().toDS()
     val groups = allPossibleCombinations.filter(x=>allRelationsAreNeverFollow(x))
-      .map(x => new CausalGroup[String](causalGroupNotCompleted.getFirstGroup(), x))
+      .filter(x=>x.size>1)
       .collect().toList
 
     return groups
@@ -113,9 +133,14 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       (y, idxY) <- possibleGroup.zipWithIndex
       if idxX < idxY
     } yield new Pair(x,y)
-    val numberOfNeverFollowPairs = allPossiblePairs.filter(x=> neverFollowPairs.contains(x)).toList.length
+    val numberOfNeverFollowPairs = allPossiblePairs
+      .filter(x=> (neverFollowPairs.contains(x) || neverFollowPairs.contains(createInversePair(x))))
+      .toList.length
 
     if (numberOfNeverFollowPairs == allPossiblePairs.size) true else false
   }
 
+  def createInversePair(pair : Pair): Pair = {
+    return new Pair(pair.getSecondMember(), pair.getFirstMember())
+  }
 }
