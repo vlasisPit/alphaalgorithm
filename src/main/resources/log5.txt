@@ -1,0 +1,4 @@
+Case1 A B C E F G H
+Case2 A B C E G F H
+Case3 A D E G F H
+Case4 A D E F G H
