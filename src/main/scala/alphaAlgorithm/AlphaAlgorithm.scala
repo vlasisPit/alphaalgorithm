@@ -1,12 +1,11 @@
 package alphaAlgorithm
 
-import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation, Relation}
+import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
-import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations}
+import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
 import tools.TraceTools
 
-//TODO event must be a generic, not only String type
 //TODO refactor main AlphaAlgorithm
 //TODO check for a better implementation of encoders
 object AlphaAlgorithm {
@@ -85,12 +84,16 @@ object AlphaAlgorithm {
 
     logRelations.cache()
 
-    logRelations.foreach(x=>println(x.toString))
-
     //compute causal groups - Step 4
     //directCausalGroups are all causality relations because they are by default causal group
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations) //String is event type
     val causalGroups = findCausalGroups.extractCausalGroups()
+
+    //compute only maximal groups - Step 5
+    val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(causalGroups)
+    val maximalGroups = findMaximalPairs.extract()
+
+    maximalGroups.foreach(x=>println(x.toString))
 
     // Stop the session
     spark.stop()

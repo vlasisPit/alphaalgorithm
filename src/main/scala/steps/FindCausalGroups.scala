@@ -48,16 +48,12 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .map(x=>x._1)
       .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
 
-    directCausalGroups.foreach(x=>println(x.toString))
-
     val causalGroupsFromLeft = directCausalGroups
       .groupByKey(x=>x.getFirstGroup())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
       .flatMap(x=> createFinalCausalGroupsLeft(x))
-
-    causalGroupsFromLeft.foreach(x=>println(x.toString))
 
     val causalGroupsFromRight = directCausalGroups
       .map(x=>new CausalGroup(x.getSecondGroup(), x.getFirstGroup()))
@@ -66,8 +62,6 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
       .flatMap(x=> createFinalCausalGroupsRight(x))
-
-    causalGroupsFromRight.foreach(x=>println(x.toString))
 
     return directCausalGroups.collect.toList :::
             causalGroupsFromLeft.collect.toList :::
