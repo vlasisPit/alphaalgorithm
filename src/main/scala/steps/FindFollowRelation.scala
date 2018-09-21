@@ -1,4 +1,4 @@
-package relations
+package steps
 
 import misc.{Directionality, PairNotation, FullPairsInfoMap, Relation}
 

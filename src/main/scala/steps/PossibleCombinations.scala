@@ -1,4 +1,4 @@
-package relations
+package steps
 
 /**
   * Find all possible sub-groups for a given data set

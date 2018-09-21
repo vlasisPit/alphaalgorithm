@@ -3,7 +3,7 @@ package alphaAlgorithm
 import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation, Relation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
-import relations.{FindCausalGroups, FindFollowRelation, FindLogRelations}
+import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations}
 import tools.TraceTools
 
 //TODO event must be a generic, not only String type

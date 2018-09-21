@@ -1,4 +1,4 @@
-package relations
+package steps
 
 import misc.{PairNotation, Relation, Directionality, Pair}
 import org.scalatest.FunSuite

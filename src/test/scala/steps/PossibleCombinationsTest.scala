@@ -1,4 +1,4 @@
-package relations
+package steps
 
 import org.scalatest.FunSuite
 

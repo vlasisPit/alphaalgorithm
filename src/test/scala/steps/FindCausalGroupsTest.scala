@@ -1,4 +1,4 @@
-package relations
+package steps
 
 import misc.{CausalGroup, Pair, Relation}
 import org.apache.log4j.{Level, Logger}
