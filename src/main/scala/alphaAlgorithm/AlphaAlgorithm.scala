@@ -3,6 +3,7 @@ package alphaAlgorithm
 import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
+import petriNet.state.{FinalState, InitialState, State}
 import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
 import tools.TraceTools
 
@@ -44,16 +45,24 @@ object AlphaAlgorithm {
     // Convert to a DataSet
     import spark.implicits._
     val tracesDS = traces.toDS()
+    tracesDS.cache()
 
-    //Sorted list of all event types
+    //Step 1 - Find all transitions / events, Sorted list of all event types
     val events = tracesDS
-        .map(x=>x._2)
-        .flatMap(x=>x.toSet)
-        .collect()
-        .toSet
-        .toList
-        .sorted
+      .map(x=>x._2)
+      .flatMap(x=>x.toSet)
+      .collect()
+      .toSet
+      .toList
+      .sorted
 
+    //Step 2 - Construct a set with all start activities (Ti)
+    val startActivities = tracesDS.map(x=>x._2.head).collect().toSet
+
+    //Step 3 - Construct a set with all start activities (Ti)
+    val finalActivities = tracesDS.map(x=>x._2.last).collect().toSet
+
+    //Step 4 Calculate pairs - Footprint graph
     //construct a list of pair events for which computations must be made
     val pairsToExamine = traceTools.constructPairsForComputationFromEvents(events)
 
@@ -94,6 +103,17 @@ object AlphaAlgorithm {
     val maximalGroups = findMaximalPairs.extract()
 
     maximalGroups.foreach(x=>println(x.toString))
+
+    //set of places/states - step 6
+    val states = maximalGroups
+      .map(x=> new State(x.getFirstGroup(), x.getSecondGroup()))
+
+    val places = (new InitialState(startActivities), new FinalState(finalActivities), states)
+    print(places)
+    //set of arcs (flow) - step 7
+
+    //construct petri net - step 8
+
 
     // Stop the session
     spark.stop()
