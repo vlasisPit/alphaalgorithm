@@ -3,6 +3,7 @@ package alphaAlgorithm
 import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
+import petriNet.actions.FindEdges
 import petriNet.state.{FinalState, InitialState, State}
 import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
 import tools.TraceTools
@@ -39,7 +40,7 @@ object AlphaAlgorithm {
 
     //traces like (case1, List(A,B,C,D))
     val traces = spark.sparkContext
-      .textFile("src/main/resources/log1.txt")
+      .textFile("src/main/resources/log2.txt")
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
@@ -109,8 +110,11 @@ object AlphaAlgorithm {
       .map(x=> new State(x.getFirstGroup(), x.getSecondGroup()))
 
     val places = (new InitialState(startActivities), new FinalState(finalActivities), states)
-    print(places)
+
     //set of arcs (flow) - step 7
+    val findEdges: FindEdges = new FindEdges(places)
+    val edges = findEdges.find()
+    print(edges)
 
     //construct petri net - step 8
 
