@@ -28,10 +28,6 @@ object AlphaAlgorithm {
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
 
   def main(args: Array[String]): Unit = {
-    val followRelation: FindFollowRelation = new FindFollowRelation()
-    val findLogRelations: FindLogRelations = new FindLogRelations()
-    val traceTools: TraceTools = new TraceTools()
-
     Logger.getLogger("org").setLevel(Level.ERROR)
     val spark = SparkSession
       .builder()
@@ -40,9 +36,24 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
+    //construct petri net - step 8
+    val petriNet: PetriNet = getPetriNet("src/main/resources/log2.txt")
+    println(petriNet)
+
+    // Stop the session
+    spark.stop()
+  }
+
+  def getPetriNet(logPath : String) : PetriNet ={
+    val followRelation: FindFollowRelation = new FindFollowRelation()
+    val findLogRelations: FindLogRelations = new FindLogRelations()
+    val traceTools: TraceTools = new TraceTools()
+
+    val spark = SparkSession.builder().getOrCreate()
+
     //traces like (case1, List(A,B,C,D))
     val traces = spark.sparkContext
-      .textFile("src/main/resources/log2.txt")
+      .textFile(logPath)
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
@@ -119,11 +130,6 @@ object AlphaAlgorithm {
     val edges = findEdges.find()
 
     //construct petri net - step 8
-    val petriNet: PetriNet = new PetriNet(places, events, edges)
-    println(petriNet)
-
-    // Stop the session
-    spark.stop()
+    return new PetriNet(places, events, edges)
   }
-
 }
