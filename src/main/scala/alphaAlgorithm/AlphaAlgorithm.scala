@@ -4,7 +4,7 @@ import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
 import petriNet.actions.FindEdges
-import petriNet.state.{FinalState, InitialState, State}
+import petriNet.state.{Places, State}
 import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
 import tools.TraceTools
 
@@ -109,12 +109,18 @@ object AlphaAlgorithm {
     val states = maximalGroups
       .map(x=> new State(x.getFirstGroup(), x.getSecondGroup()))
 
-    val places = (new InitialState(startActivities), new FinalState(finalActivities), states)
+    val initialState = new State(Set.empty, startActivities)
+    val finalState = new State(finalActivities, Set.empty)
+
+    val places = new Places(initialState, finalState, states)
+    println("InitialState "+places.getInitialState().toString())
+    println("FinalState "+places.getFinalState().toString())
+    println("States "+places.getStates().toString())
 
     //set of arcs (flow) - step 7
     val findEdges: FindEdges = new FindEdges(places)
     val edges = findEdges.find()
-    print(edges)
+    println(edges)
 
     //construct petri net - step 8
 
