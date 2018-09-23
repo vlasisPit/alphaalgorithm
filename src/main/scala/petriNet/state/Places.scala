@@ -19,4 +19,7 @@ class Places(val places: (State, State, List[State])) extends Serializable {
   def getFinalState(): State = {
     return places._2
   }
+
+
+  override def toString = s"Places(states = $getStates, initialState = $getInitialState, finalState = $getFinalState)"
 }

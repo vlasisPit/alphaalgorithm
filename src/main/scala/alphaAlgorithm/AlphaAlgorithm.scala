@@ -3,6 +3,7 @@ package alphaAlgorithm
 import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
+import petriNet.PetriNet
 import petriNet.actions.FindEdges
 import petriNet.state.{Places, State}
 import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
@@ -10,6 +11,7 @@ import tools.TraceTools
 
 //TODO refactor main AlphaAlgorithm
 //TODO check for a better implementation of encoders
+//TODO check for more Datasets
 object AlphaAlgorithm {
 
   implicit def mapPairEncoder: org.apache.spark.sql.Encoder[Map[String, (PairNotation, PairNotation)]] = org.apache.spark.sql.Encoders.kryo[Map[String, (PairNotation, PairNotation)]]
@@ -103,8 +105,6 @@ object AlphaAlgorithm {
     val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(causalGroups)
     val maximalGroups = findMaximalPairs.extract()
 
-    maximalGroups.foreach(x=>println(x.toString))
-
     //set of places/states - step 6
     val states = maximalGroups
       .map(x=> new State(x.getFirstGroup(), x.getSecondGroup()))
@@ -113,17 +113,14 @@ object AlphaAlgorithm {
     val finalState = new State(finalActivities, Set.empty)
 
     val places = new Places(initialState, finalState, states)
-    println("InitialState "+places.getInitialState().toString())
-    println("FinalState "+places.getFinalState().toString())
-    println("States "+places.getStates().toString())
 
     //set of arcs (flow) - step 7
     val findEdges: FindEdges = new FindEdges(places)
     val edges = findEdges.find()
-    println(edges)
 
     //construct petri net - step 8
-
+    val petriNet: PetriNet = new PetriNet(places, events, edges)
+    println(petriNet)
 
     // Stop the session
     spark.stop()
