@@ -2,9 +2,10 @@ package alphaAlgorithm
 
 import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.{Encoder, Encoders, SparkSession}
+import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
 import petriNet.PetriNet
 import petriNet.actions.FindEdges
+import petriNet.flow.Edge
 import petriNet.state.{Places, State}
 import steps.{FindCausalGroups, FindFollowRelation, FindLogRelations, FindMaximalPairs}
 import tools.TraceTools
@@ -22,6 +23,9 @@ object AlphaAlgorithm {
   implicit def setOfPairNotationEncoder: org.apache.spark.sql.Encoder[Set[PairNotation]] = org.apache.spark.sql.Encoders.kryo[Set[PairNotation]]
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
   implicit def causalGroupEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
+  implicit def listStringEncoder: org.apache.spark.sql.Encoder[List[String]] = org.apache.spark.sql.Encoders.kryo[List[String]]
+  implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
+
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -36,48 +40,109 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    //construct petri net - step 8
-    val petriNet: PetriNet = getPetriNet("src/main/resources/log2.txt")
+    val petriNet: PetriNet = executeAlphaAlgorithm("src/main/resources/log1.txt")
     println(petriNet)
 
     // Stop the session
     spark.stop()
   }
 
-  def getPetriNet(logPath : String) : PetriNet ={
-    val followRelation: FindFollowRelation = new FindFollowRelation()
-    val findLogRelations: FindLogRelations = new FindLogRelations()
-    val traceTools: TraceTools = new TraceTools()
+  /**
+    * Alpha algorithm execution consists of 8 steps.
+    * The result is a PetriNet flow.
+    * @param logPath
+    * @return
+    */
+  def executeAlphaAlgorithm(logPath : String) : PetriNet = {
 
+    val tracesDS : Dataset[(String, List[String])] = tracesDSFromLogFile(logPath)
+
+    //Step 1 - Find all transitions / events, Sorted list of all event types
+    val events = getAllEvents(tracesDS)
+
+    //Step 2 - Construct a set with all start activities (Ti)
+    val startActivities = getStartActivities(tracesDS)
+
+    //Step 3 - Construct a set with all final activities (To)
+    val finalActivities = getFinalActivities(tracesDS)
+
+    //Step 4 - Footprint graph - Causal groups
+    val logRelations : Dataset[(Pair, String)] = getFootprintGraph(tracesDS, events)
+    val causalGroups : List[CausalGroup[String]] = getCausalGroups(logRelations)
+
+    //Step 5 - compute only maximal groups
+    val maximalGroups : List[CausalGroup[String]] = getMaximalGroups(causalGroups)
+
+    //step 6 - set of places/states
+    val places : Places = getPlaces(maximalGroups, startActivities, finalActivities)
+
+    //step 7 - set of arcs (flow)
+    val edges : List[Edge] = getEdges(places)
+
+    //step 8 - construct petri net
+    return new PetriNet(places, events, edges)
+  }
+
+  def tracesDSFromLogFile(logPath: String) : Dataset[(String, List[String])] = {
     val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
 
     //traces like (case1, List(A,B,C,D))
+    val traceTools: TraceTools = new TraceTools()
     val traces = spark.sparkContext
       .textFile(logPath)
       .map(x=>traceTools.parseLine(x))
 
     // Convert to a DataSet
-    import spark.implicits._
     val tracesDS = traces.toDS()
     tracesDS.cache()
+    return tracesDS
+  }
 
-    //Step 1 - Find all transitions / events, Sorted list of all event types
-    val events = tracesDS
+  /**
+    * Step 1 - Find all transitions / events, Sorted list of all event types
+    * @param tracesDS
+    * @return
+    */
+  def getAllEvents(tracesDS: Dataset[(String, List[String])]) : List[String] = {
+    return tracesDS
       .map(x=>x._2)
       .flatMap(x=>x.toSet)
       .collect()
       .toSet
       .toList
       .sorted
+  }
 
-    //Step 2 - Construct a set with all start activities (Ti)
-    val startActivities = tracesDS.map(x=>x._2.head).collect().toSet
+  /**
+    * Step 2 - Construct a set with all start activities (Ti)
+    * @param tracesDS
+    * @return
+    */
+  def getStartActivities(tracesDS: Dataset[(String, List[String])]) : Set[String] = {
+    return tracesDS.map(x=>x._2.head).collect().toSet
+  }
 
-    //Step 3 - Construct a set with all start activities (Ti)
-    val finalActivities = tracesDS.map(x=>x._2.last).collect().toSet
+  /**
+    * Step 3 - Construct a set with all final activities (To)
+    * @param tracesDS
+    * @return
+    */
+  def getFinalActivities(tracesDS: Dataset[(String, List[String])]) : Set[String] = {
+    return tracesDS.map(x=>x._2.last).collect().toSet
+  }
 
-    //Step 4 Calculate pairs - Footprint graph
-    //construct a list of pair events for which computations must be made
+  /**
+    * Step 4 Calculate pairs - Footprint graph
+    * construct a list of pair events for which computations must be made
+    * @param tracesDS
+    * @param events
+    * @return
+    */
+  def getFootprintGraph(tracesDS: Dataset[(String, List[String])], events: List[String]): Dataset[(Pair, String)] = {
+    val followRelation: FindFollowRelation = new FindFollowRelation()
+    val findLogRelations: FindLogRelations = new FindLogRelations()
+    val traceTools: TraceTools = new TraceTools()
     val pairsToExamine = traceTools.constructPairsForComputationFromEvents(events)
 
     /**
@@ -106,30 +171,54 @@ object AlphaAlgorithm {
       .map(x=>findLogRelations.findFootPrintGraph(x))
 
     logRelations.cache()
+  }
 
-    //compute causal groups - Step 4
-    //directCausalGroups are all causality relations because they are by default causal group
-    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations) //String is event type
-    val causalGroups = findCausalGroups.extractCausalGroups()
+  /**
+    * compute causal groups - Step 4
+    * directCausalGroups are all causality relations because they are by default causal group
+    * @param logRelations
+    * @return
+    */
+  def getCausalGroups(logRelations: Dataset[(Pair, String)]): List[CausalGroup[String]] = {
+    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+    findCausalGroups.extractCausalGroups()
+  }
 
-    //compute only maximal groups - Step 5
+  /**
+    * Step 5 - compute only maximal groups
+    * @param causalGroups
+    * @return
+    */
+  def getMaximalGroups(causalGroups: List[CausalGroup[String]]): List[CausalGroup[String]] = {
     val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(causalGroups)
-    val maximalGroups = findMaximalPairs.extract()
+    findMaximalPairs.extract()
+  }
 
-    //set of places/states - step 6
+  /**
+    * step 6 - set of places/states
+    * @param maximalGroups
+    * @param startActivities
+    * @param finalActivities
+    * @return
+    */
+  def getPlaces(maximalGroups : List[CausalGroup[String]], startActivities : Set[String], finalActivities : Set[String]): Places = {
     val states = maximalGroups
       .map(x=> new State(x.getFirstGroup(), x.getSecondGroup()))
 
     val initialState = new State(Set.empty, startActivities)
     val finalState = new State(finalActivities, Set.empty)
 
-    val places = new Places(initialState, finalState, states)
-
-    //set of arcs (flow) - step 7
-    val findEdges: FindEdges = new FindEdges(places)
-    val edges = findEdges.find()
-
-    //construct petri net - step 8
-    return new PetriNet(places, events, edges)
+    new Places(initialState, finalState, states)
   }
+
+  /**
+    * step 7 - set of arcs (flow)
+    * @param places
+    * @return
+    */
+  def getEdges(places: Places): List[Edge] = {
+    val findEdges: FindEdges = new FindEdges(places)
+    findEdges.find()
+  }
+
 }
