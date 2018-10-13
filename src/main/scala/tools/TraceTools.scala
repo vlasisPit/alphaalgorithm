@@ -1,9 +1,26 @@
 package tools
 
+import org.apache.spark.sql.{Dataset, SparkSession}
+
 import scala.collection.mutable.ListBuffer
 
 @SerialVersionUID(100L)
 class TraceTools extends Serializable {
+
+  def tracesDSFromLogFile(logPath: String) : Dataset[(String, List[String])] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    //traces like (case1, List(A,B,C,D))
+    val traces = spark.sparkContext
+      .textFile(logPath)
+      .map(x=>parseLine(x))
+
+    // Convert to a DataSet
+    val tracesDS = traces.toDS()
+    tracesDS.cache()
+    return tracesDS
+  }
 
   def parseLine(line: String) = {
     val fields = line.split(" ")
