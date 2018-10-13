@@ -30,7 +30,7 @@ class TraceTools extends Serializable {
   }
 
   /**
-    * We assume that the events list contains no duplicates
+    * We assume that the events list contains no duplicates and they are sorted
     * If the events are A,B,C,D,E then pairs for computation are
     * AA, AB AC AD
     * BB BC BD
@@ -40,21 +40,15 @@ class TraceTools extends Serializable {
     * @return
     */
   def constructPairsForComputationFromEvents(events: List[String]): List[String] = {
-    var tempTrace = events
-    var pairs = new ListBuffer[String]()
-
-    for( i <- 0 to events.size-1) {
-      for( j <- 0 to tempTrace.length-1) {
-        val tuple2 = events(i)+tempTrace(j)
-        pairs = pairs += tuple2
-      }
-      tempTrace = tempTrace.tail
-    }
-
-    return pairs.toList
+    for {
+      (x, idxX) <- events.zipWithIndex
+      (y, idxY) <- events.zipWithIndex
+      if (idxX == idxY || idxX < idxY)
+    } yield x.concat(y)
   }
 
   /**
+    * Not needed. Just left there in case of future use
     * Construct pairs for computation from a trace, which may contains duplicate events
     * @param trace
     * @return

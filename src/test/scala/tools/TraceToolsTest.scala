@@ -26,6 +26,7 @@ class TraceToolsTest extends FunSuite  {
     assert(pairs.contains("DD"))
     assert(pairs.contains("DE"))
     assert(pairs.contains("EE"))
+    assert(pairs.length==15)
 
     assert(!pairs.contains("BA"))
     assert(!pairs.contains("CA"))
