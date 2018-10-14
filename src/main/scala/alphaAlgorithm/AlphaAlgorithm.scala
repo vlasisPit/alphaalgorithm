@@ -22,7 +22,7 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    val petriNet: PetriNet = executeAlphaAlgorithm("src/main/resources/log1.txt")
+    val petriNet: PetriNet = executeAlphaAlgorithm("src/main/resources/log2.txt")
     println(petriNet)
 
     // Stop the session

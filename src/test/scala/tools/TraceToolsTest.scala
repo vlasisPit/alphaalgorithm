@@ -1,6 +1,7 @@
 package tools
 
 import org.scalatest.FunSuite
+import misc.Pair
 
 class TraceToolsTest extends FunSuite  {
 
@@ -9,29 +10,29 @@ class TraceToolsTest extends FunSuite  {
 
     val events: List[String] = List("A", "B", "C", "D", "E")
 
-    val pairs: List[(String)] = traceTools.constructPairsForComputationFromEvents(events)
+    val pairs: List[Pair] = traceTools.constructPairsForComputationFromEvents(events)
 
-    assert(pairs.contains("AA"))
-    assert(pairs.contains("AB"))
-    assert(pairs.contains("AC"))
-    assert(pairs.contains("AD"))
-    assert(pairs.contains("AE"))
-    assert(pairs.contains("BB"))
-    assert(pairs.contains("BC"))
-    assert(pairs.contains("BD"))
-    assert(pairs.contains("BE"))
-    assert(pairs.contains("CC"))
-    assert(pairs.contains("CD"))
-    assert(pairs.contains("CE"))
-    assert(pairs.contains("DD"))
-    assert(pairs.contains("DE"))
-    assert(pairs.contains("EE"))
+    assert(pairs.contains(new Pair("A", "A")))
+    assert(pairs.contains(new Pair("A", "B")))
+    assert(pairs.contains(new Pair("A", "C")))
+    assert(pairs.contains(new Pair("A", "D")))
+    assert(pairs.contains(new Pair("A", "E")))
+    assert(pairs.contains(new Pair("B", "B")))
+    assert(pairs.contains(new Pair("B", "C")))
+    assert(pairs.contains(new Pair("B", "D")))
+    assert(pairs.contains(new Pair("B", "E")))
+    assert(pairs.contains(new Pair("C", "C")))
+    assert(pairs.contains(new Pair("C", "D")))
+    assert(pairs.contains(new Pair("C", "E")))
+    assert(pairs.contains(new Pair("D", "D")))
+    assert(pairs.contains(new Pair("D", "E")))
+    assert(pairs.contains(new Pair("E", "E")))
     assert(pairs.length==15)
 
-    assert(!pairs.contains("BA"))
-    assert(!pairs.contains("CA"))
-    assert(!pairs.contains("DA"))
-    assert(!pairs.contains("CB"))
+    assert(!pairs.contains(new Pair("B", "A")))
+    assert(!pairs.contains(new Pair("C", "A")))
+    assert(!pairs.contains(new Pair("D", "A")))
+    assert(!pairs.contains(new Pair("C", "B")))
   }
 
   test("TraceTools.constructPairsForComputationFromTrace") {

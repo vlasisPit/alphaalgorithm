@@ -3,6 +3,7 @@ package tools
 import org.apache.spark.sql.{Dataset, SparkSession}
 
 import scala.collection.mutable.ListBuffer
+import misc.Pair
 
 @SerialVersionUID(100L)
 class TraceTools extends Serializable {
@@ -39,12 +40,12 @@ class TraceTools extends Serializable {
     * @param events
     * @return
     */
-  def constructPairsForComputationFromEvents(events: List[String]): List[String] = {
+  def constructPairsForComputationFromEvents(events: List[String]): List[Pair] = {
     for {
       (x, idxX) <- events.zipWithIndex
       (y, idxY) <- events.zipWithIndex
       if (idxX == idxY || idxX < idxY)
-    } yield x.concat(y)
+    } yield new Pair(x,y)
   }
 
   /**

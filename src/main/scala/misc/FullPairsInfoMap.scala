@@ -5,9 +5,9 @@ package misc
   * @param map
   */
 @SerialVersionUID(100L)
-class FullPairsInfoMap(var map: Map[String, (PairNotation, PairNotation)]) extends Serializable {
+class FullPairsInfoMap(var map: Map[Pair, (PairNotation, PairNotation)]) extends Serializable {
 
-  def getPairsMap(): Map[String, (PairNotation, PairNotation)] = {
+  def getPairsMap(): Map[Pair, (PairNotation, PairNotation)] = {
     return map
   }
 }

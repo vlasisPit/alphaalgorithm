@@ -10,7 +10,7 @@ import tools.TraceTools
 @SerialVersionUID(100L)
 class AlphaAlgorithmSteps extends Serializable {
 
-  implicit def mapPairEncoder: org.apache.spark.sql.Encoder[Map[String, (PairNotation, PairNotation)]] = org.apache.spark.sql.Encoders.kryo[Map[String, (PairNotation, PairNotation)]]
+  implicit def mapPairEncoder: org.apache.spark.sql.Encoder[Map[Pair, (PairNotation, PairNotation)]] = org.apache.spark.sql.Encoders.kryo[Map[Pair, (PairNotation, PairNotation)]]
   implicit def pairInfoEncoder: org.apache.spark.sql.Encoder[PairInfo] = org.apache.spark.sql.Encoders.kryo[PairInfo]
   implicit def pairInfoListEncoder: org.apache.spark.sql.Encoder[List[PairInfo]] = org.apache.spark.sql.Encoders.kryo[List[PairInfo]]
   implicit def pairsMapEncoder: org.apache.spark.sql.Encoder[FullPairsInfoMap] = org.apache.spark.sql.Encoders.kryo[FullPairsInfoMap]
@@ -94,7 +94,7 @@ class AlphaAlgorithmSteps extends Serializable {
       */
     val logRelations = pairInfo
       .groupByKey(x=> x.getPairName())
-      .mapGroups{case(k, iter) => (new Pair(k.charAt(0).toString, k.charAt(1).toString), iter.map(x => x.getPairNotation()).toSet)}    //TODO unique objects must be inserted
+      .mapGroups{case(k, iter) => (new Pair(k.getFirstMember().toString, k.getSecondMember().toString), iter.map(x => x.getPairNotation()).toSet)}
       .map(x=>findLogRelations.findFootPrintGraph(x))
 
     logRelations.cache()

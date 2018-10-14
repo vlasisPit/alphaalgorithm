@@ -1,8 +1,8 @@
 package misc
 
 @SerialVersionUID(100L)
-class PairInfo(var pairInfo:(String, PairNotation)) extends Serializable {
-  def getPairName(): String = {
+class PairInfo(var pairInfo:(Pair, PairNotation)) extends Serializable {
+  def getPairName(): Pair = {
     return pairInfo._1
   }
 

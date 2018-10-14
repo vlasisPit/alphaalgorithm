@@ -1,8 +1,6 @@
 package steps
 
-import misc.{Directionality, PairNotation, FullPairsInfoMap, Relation}
-
-import scala.collection.mutable.ListBuffer
+import misc.{Directionality, FullPairsInfoMap, Pair, PairNotation, Relation}
 
 @SerialVersionUID(100L)
 class FindFollowRelation() extends Serializable {
@@ -16,11 +14,11 @@ class FindFollowRelation() extends Serializable {
     * @param traceWithCaseId
     * @return
     */
-  def findFollowRelation(traceWithCaseId: (String, List[String]), pairsToExamine: List[String]):FullPairsInfoMap = {
+  def findFollowRelation(traceWithCaseId: (String, List[String]), pairsToExamine: List[Pair]):FullPairsInfoMap = {
     var pairInfoMap = pairInfoInit(pairsToExamine)
 
     Range(0, traceWithCaseId._2.length-1)
-      .map(i=> traceWithCaseId._2(i)+traceWithCaseId._2(i+1))
+      .map(i=> new Pair(traceWithCaseId._2(i), traceWithCaseId._2(i+1)))
       .map(pair=> {
           val pairExists : Boolean = checkIfPairExists(pair, pairInfoMap)
           pairInfoMap = matchPairExists(pairExists, pair, pairInfoMap)
@@ -30,11 +28,11 @@ class FindFollowRelation() extends Serializable {
     return new FullPairsInfoMap(pairInfoMap)
   }
 
-  def matchPairExists(bool: Boolean, pair: String, pairInfoMap : Map[String, (PairNotation, PairNotation)]): Map[String, (PairNotation, PairNotation)] = bool match {
+  def matchPairExists(bool: Boolean, pair: Pair, pairInfoMap : Map[Pair, (PairNotation, PairNotation)]): Map[Pair, (PairNotation, PairNotation)] = bool match {
     case false => {//reverse relation in this case
-        val tuple2 = pairInfoMap(pair.reverse)
+        val tuple2 = pairInfoMap(new Pair(pair.getSecondMember(), pair.getFirstMember()))
         val newTuple2 = (tuple2._1,new PairNotation(Directionality.INVERSE, Relation.FOLLOW))
-        pairInfoMap + (pair.reverse -> newTuple2)
+        pairInfoMap + (new Pair(pair.getSecondMember(), pair.getFirstMember()) -> newTuple2)
       }
     case true => {
         val tuple2 = pairInfoMap(pair)
@@ -43,7 +41,7 @@ class FindFollowRelation() extends Serializable {
       }
   }
 
-  def checkIfPairExists(pair: String, pairInfoMap: Map[String, (PairNotation, PairNotation)]) : Boolean = {
+  def checkIfPairExists(pair: Pair, pairInfoMap: Map[Pair, (PairNotation, PairNotation)]) : Boolean = {
     return pairInfoMap.keys.toList.contains(pair)
   }
 
@@ -52,7 +50,7 @@ class FindFollowRelation() extends Serializable {
     * @param pairsToExamine
     * @return
     */
-  private def pairInfoInit(pairsToExamine: List[String]) : Map[String, (PairNotation, PairNotation)] = {
+  private def pairInfoInit(pairsToExamine: List[Pair]) : Map[Pair, (PairNotation, PairNotation)] = {
     pairsToExamine
       .map(pair => pair -> (new PairNotation((Directionality.DIRECT, Relation.NOT_FOLLOW)), new PairNotation((Directionality.INVERSE, Relation.NOT_FOLLOW))))
       .toMap
