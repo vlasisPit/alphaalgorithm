@@ -10,7 +10,6 @@ import steps._
 import tools.TraceTools
 
 //TODO check for a better implementation of encoders
-//TODO check for more Datasets
 object AlphaAlgorithm {
 
   def main(args: Array[String]): Unit = {

@@ -20,7 +20,7 @@ class AlphaAlgorithmSteps extends Serializable {
   implicit def causalGroupEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def listStringEncoder: org.apache.spark.sql.Encoder[List[String]] = org.apache.spark.sql.Encoders.kryo[List[String]]
   implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
-
+  implicit def pairNotEncoder: org.apache.spark.sql.Encoder[((Pair, Set[PairNotation]), List[PairNotation], List[PairNotation])] = org.apache.spark.sql.Encoders.kryo[((Pair, Set[PairNotation]), List[PairNotation], List[PairNotation])]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -95,7 +95,8 @@ class AlphaAlgorithmSteps extends Serializable {
     val logRelations = pairInfo
       .groupByKey(x=> x.getPairName())
       .mapGroups{case(k, iter) => (new Pair(k.getFirstMember().toString, k.getSecondMember().toString), iter.map(x => x.getPairNotation()).toSet)}
-      .map(x=>findLogRelations.findFootPrintGraph(x))
+      .map(x=>findLogRelations.getDirectAndInverseFollowRelations(x))
+      .map(x=>findLogRelations.extractFootPrintGraph(x._1, x._2, x._3))
 
     logRelations.cache()
   }

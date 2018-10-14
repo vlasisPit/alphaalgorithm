@@ -1,6 +1,6 @@
 package steps
 
-import misc.{Directionality, PairNotation, Relation, Pair}
+import misc.{Directionality, Pair, PairNotation, Relation}
 
 /**
   * Find log relations
@@ -11,7 +11,7 @@ import misc.{Directionality, PairNotation, Relation, Pair}
 @SerialVersionUID(100L)
 class FindLogRelations() extends Serializable {
 
-  def findFootPrintGraph[T](pairInfo: (Pair, Set[PairNotation])): (Pair, String) = {
+  def getDirectAndInverseFollowRelations(pairInfo: (Pair, Set[PairNotation])): ((Pair, Set[PairNotation]), List[PairNotation], List[PairNotation]) = {
     val directFollow = pairInfo._2.toSeq
       .filter(x=> x.getDirectionality()==Directionality.DIRECT && x.getRelation()==Relation.FOLLOW)
       .toList
@@ -20,6 +20,10 @@ class FindLogRelations() extends Serializable {
       .filter(x=> x.getDirectionality()==Directionality.INVERSE && x.getRelation()==Relation.FOLLOW)
       .toList
 
+    (pairInfo, directFollow, inverseFollow)
+  }
+
+  def extractFootPrintGraph(pairInfo: (Pair, Set[PairNotation]), directFollow: List[PairNotation], inverseFollow: List[PairNotation]): (Pair, String) = {
     if (directFollow.nonEmpty && inverseFollow.nonEmpty) {
       (pairInfo._1, Relation.PARALLELISM.toString)
     } else if (directFollow.nonEmpty && inverseFollow.isEmpty) {

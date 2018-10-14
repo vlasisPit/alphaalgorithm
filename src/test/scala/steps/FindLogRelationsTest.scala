@@ -14,7 +14,8 @@ class FindLogRelationsTest extends FunSuite {
         new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(Pair, String) = logRelations.findFootPrintGraph(pairInfo)
+    val directInverseFollowRel = logRelations.getDirectAndInverseFollowRelations(pairInfo)
+    val relation:(Pair, String) = logRelations.extractFootPrintGraph(directInverseFollowRel._1, directInverseFollowRel._2, directInverseFollowRel._3)
 
     assert(relation._2.equals(Relation.PARALLELISM.toString))
   }
@@ -27,7 +28,8 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(Pair, String) = logRelations.findFootPrintGraph(pairInfo)
+    val directInverseFollowRel = logRelations.getDirectAndInverseFollowRelations(pairInfo)
+    val relation:(Pair, String) = logRelations.extractFootPrintGraph(directInverseFollowRel._1, directInverseFollowRel._2, directInverseFollowRel._3)
 
     assert(relation._2.equals(Relation.CAUSALITY.toString))
   }
@@ -40,7 +42,8 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.DIRECT ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(Pair, String) = logRelations.findFootPrintGraph(pairInfo)
+    val directInverseFollowRel = logRelations.getDirectAndInverseFollowRelations(pairInfo)
+    val relation:(Pair, String) = logRelations.extractFootPrintGraph(directInverseFollowRel._1, directInverseFollowRel._2, directInverseFollowRel._3)
 
     assert(relation._1.getFirstMember().equals("B"))
     assert(relation._1.getSecondMember().equals("E"))
@@ -55,7 +58,8 @@ class FindLogRelationsTest extends FunSuite {
       new PairNotation((Directionality.INVERSE ,Relation.NOT_FOLLOW))
     ))
 
-    val relation:(Pair, String) = logRelations.findFootPrintGraph(pairInfo)
+    val directInverseFollowRel = logRelations.getDirectAndInverseFollowRelations(pairInfo)
+    val relation:(Pair, String) = logRelations.extractFootPrintGraph(directInverseFollowRel._1, directInverseFollowRel._2, directInverseFollowRel._3)
 
     assert(relation._2.equals(Relation.NEVER_FOLLOW.toString))
   }

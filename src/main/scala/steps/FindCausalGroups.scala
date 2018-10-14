@@ -15,7 +15,7 @@ import org.apache.spark.sql._
   * (Pair(A, B),CAUSALITY)
   * (Pair(B, B),NEVER_FOLLOW)
   * (Pair(C, D),CAUSALITY)
-  * Let Q,R be set of activities. Then (Q,R) is a causal group iff there is a causal relation -> from each element of Q
+  * Let Q,R be two sets of activities. Then (Q,R) is a causal group iff there is a causal relation -> from each element of Q
   * to each element of R (ie all pairwise combinations of elements of Q and R are in ->) and the members of Q and R are
   * not in ||
   *
