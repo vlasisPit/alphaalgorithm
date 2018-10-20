@@ -1,8 +1,8 @@
 package alphaAlgorithm
 
-import misc.{CausalGroup, FullPairsInfoMap, Pair, PairInfo, PairNotation}
+import misc.{CausalGroup, Pair}
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
+import org.apache.spark.sql.{Dataset, SparkSession}
 import petriNet.PetriNet
 import petriNet.flow.Edge
 import petriNet.state.Places
@@ -15,7 +15,7 @@ object AlphaAlgorithm {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org").setLevel(Level.ERROR)
     val traceTools: TraceTools = new TraceTools()
-    val logPath = "src/main/resources/realData.csv"
+    val logPath = "src/main/resources/mockData.csv"
     val numOfTraces = 3
 
     val spark = SparkSession

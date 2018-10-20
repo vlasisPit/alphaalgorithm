@@ -1,0 +1,33 @@
+orderid,eventname,starttime
+case1,DocumentCheck,14/05/2018 19:47
+case1,SyncronizeCustomer,14/05/2018 19:47
+case1,SyncronizeCustomerOrderUpdate,14/05/2018 19:52
+case1,ProvisionFulfill,14/05/2018 19:52
+case1,ProvisionInternetServices,14/05/2018 19:52
+case1,ProvisionUpdate,14/05/2018 20:42
+case1,ProvisionOrderUpdate,14/05/2018 20:45
+case1,Billing,14/05/2018 20:47
+case1,FulfillBillingOrderUpdate,14/05/2018 20:49
+case1,CompleteUpdate,14/05/2018 20:49
+case2,DocumentCheck,24/05/2018 08:10
+case2,SyncronizeCustomer,24/05/2018 08:10
+case2,SyncronizeCustomerOrderUpdate,24/05/2018 08:11
+case2,ProvisionFulfill,24/05/2018 08:11
+case2,ProvisionInternetServices,24/05/2018 08:11
+case2,ProvisionUpdate,13/06/2018 19:21
+case2,ProvisionOrderUpdate,13/06/2018 19:25
+case2,Billing,13/06/2018 19:27
+case2,FulfillBillingOrderUpdate,13/06/2018 19:28
+case2,CompleteUpdate,13/06/2018 19:28
+case3,DocumentCheck,25/06/2018 14:30
+case3,SyncronizeCustomer,25/06/2018 14:30
+case3,SyncronizeCustomerOrderUpdate,25/06/2018 14:31
+case3,ProvisionFulfill,25/06/2018 14:31
+case3,ProvisionInternetServices,25/06/2018 18:10
+case3,Transform to NewCateogry,25/06/2018 19:07
+case3,updated state of NewCateogry,25/06/2018 21:32
+case3,ProvisionUpdate,05/07/2018 08:41
+case3,ProvisionOrderUpdate,05/07/2018 08:51
+case3,Billing,05/07/2018 08:53
+case3,FulfillBillingOrderUpdate,05/07/2018 08:54
+case3,CompleteUpdate,05/07/2018 08:54
