@@ -14,6 +14,10 @@ object AlphaAlgorithm {
 
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org").setLevel(Level.ERROR)
+    val traceTools: TraceTools = new TraceTools()
+    val logPath = "src/main/resources/realData.csv"
+    val numOfTraces = 3
+
     val spark = SparkSession
       .builder()
       .appName("AlphaAlgorithm")
@@ -21,7 +25,9 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    val petriNet: PetriNet = executeAlphaAlgorithm("src/main/resources/log2.txt")
+    val tracesDS : Dataset[(String, List[String])] = traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
+
+    val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
     println(petriNet)
 
     // Stop the session
@@ -34,11 +40,9 @@ object AlphaAlgorithm {
     * @param logPath
     * @return
     */
-  def executeAlphaAlgorithm(logPath : String) : PetriNet = {
+  def executeAlphaAlgorithm(tracesDS : Dataset[(String, List[String])]) : PetriNet = {
 
     val steps : AlphaAlgorithmSteps = new AlphaAlgorithmSteps()
-    val traceTools: TraceTools = new TraceTools()
-    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
 
     //Step 1 - Find all transitions / events, Sorted list of all event types
     val events = steps.getAllEvents(tracesDS)

@@ -2,11 +2,15 @@ package e2e
 
 import alphaAlgorithm.AlphaAlgorithm
 import org.apache.log4j.{Level, Logger}
-import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.{Dataset, SparkSession}
 import org.scalatest.FunSuite
 import petriNet.flow.Edge
 import petriNet.state.State
+import tools.TraceTools
 
+/**
+  * End-to-End tests to check the correct functionality of algorithm's implementation.
+  */
 class AlphaAlgorithmTest extends FunSuite {
   Logger.getLogger("org").setLevel(Level.ERROR)
   val spark = SparkSession
@@ -17,8 +21,10 @@ class AlphaAlgorithmTest extends FunSuite {
     .getOrCreate()
 
   test("Check Alpha Algorithm functionality - Log 1") {
-    val logPath = "src/main/resources/log1.txt"
-    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(logPath)
+    val logPath = "src/test/resources/log1.txt"
+    val traceTools: TraceTools = new TraceTools()
+    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
+    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(tracesDS)
 
     //check edges
     assert(petriNet.getEdges().contains(new Edge("A", new State(Set("A"), Set("B", "E")), true)))
@@ -48,8 +54,10 @@ class AlphaAlgorithmTest extends FunSuite {
   }
 
   test("Check Alpha Algorithm functionality - Log 2") {
-    val logPath = "src/main/resources/log2.txt"
-    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(logPath)
+    val logPath = "src/test/resources/log2.txt"
+    val traceTools: TraceTools = new TraceTools()
+    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
+    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(tracesDS)
 
     //check edges
     assert(petriNet.getEdges().contains(new Edge("A", new State(Set("A"), Set("B", "C")), true)))
@@ -73,8 +81,10 @@ class AlphaAlgorithmTest extends FunSuite {
   }
 
   test("Check Alpha Algorithm functionality - Log 3") {
-    val logPath = "src/main/resources/log3.txt"
-    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(logPath)
+    val logPath = "src/test/resources/log3.txt"
+    val traceTools: TraceTools = new TraceTools()
+    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
+    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(tracesDS)
 
     //check edges
     assert(petriNet.getEdges().contains(new Edge("A", new State(Set("A"), Set("B", "C")), true)))
@@ -108,8 +118,10 @@ class AlphaAlgorithmTest extends FunSuite {
   }
 
   test("Check Alpha Algorithm functionality - Log 4") {
-    val logPath = "src/main/resources/log4.txt"
-    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(logPath)
+    val logPath = "src/test/resources/log4.txt"
+    val traceTools: TraceTools = new TraceTools()
+    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
+    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(tracesDS)
 
     //check edges
     assert(petriNet.getEdges().contains(new Edge("A", new State(Set("A", "E"), Set("B")), true)))
@@ -135,8 +147,10 @@ class AlphaAlgorithmTest extends FunSuite {
   }
 
   test("Check Alpha Algorithm functionality - Log 5") {
-    val logPath = "src/main/resources/log5.txt"
-    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(logPath)
+    val logPath = "src/test/resources/log5.txt"
+    val traceTools: TraceTools = new TraceTools()
+    val tracesDS : Dataset[(String, List[String])] = traceTools.tracesDSFromLogFile(logPath)
+    val petriNet = AlphaAlgorithm.executeAlphaAlgorithm(tracesDS)
 
     //check edges
     assert(petriNet.getEdges().contains(new Edge("A", new State(Set("A"), Set("B","D")), true)))

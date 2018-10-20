@@ -1,6 +1,6 @@
 package tools
 
-import org.apache.spark.sql.{Dataset, SparkSession}
+import org.apache.spark.sql.{Dataset, Encoders, SparkSession}
 
 import scala.collection.mutable.ListBuffer
 import misc.Pair
@@ -28,6 +28,37 @@ class TraceTools extends Serializable {
     val caseId = fields.head
     val trace = fields.tail.toList
     (caseId, trace)
+  }
+
+  /**
+    * Read a specific number of traces (numOfTraces: Int) from a CSV file provided in path.
+    * The CSV must contains the following columns
+    * "orderid", "eventname", "starttime"
+    * @param path
+    * @param numOfTraces
+    * @return
+    */
+  def readSpecificNumberOfTracesFromCsvFile(path: String, numOfTraces: Int) : Dataset[(String, List[String])] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val df = spark.read.format("csv").option("header", "true").load(path)
+
+    val orderIds = df.select("orderid")
+      .distinct()
+      .limit(numOfTraces)
+      .as(Encoders.STRING)
+      .collect()
+      .toList
+
+    //Dataset[(String, List[String])]
+    return df.select("orderid", "eventname", "starttime")
+      .where( df("orderid").isin(orderIds:_*))
+      .orderBy("starttime")
+      .map(x=>(x.get(0).toString,x.get(1).toString))
+      .groupByKey(x=>x._1)
+      .mapGroups{case(k, iter) => (k, iter.map(x => x._2).toList)}  //toList in order to keep the order of the events
+    //.show(200,false)
   }
 
   /**
