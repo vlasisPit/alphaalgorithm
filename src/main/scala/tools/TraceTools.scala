@@ -62,6 +62,31 @@ class TraceTools extends Serializable {
   }
 
   /**
+    * Read all traces from a CSV file
+    * @param path
+    * @return
+    */
+  def readAllTracesFromCsvFile(path: String) : Dataset[(String, List[String])] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val df = spark.read.format("csv").option("header", "true").load(path)
+
+    val orderIds = df.select("orderid")
+      .distinct()
+      .as(Encoders.STRING)
+      .collect()
+      .toList
+
+    //Dataset[(String, List[String])]
+    return df.select("orderid", "eventname", "starttime")
+      .orderBy("starttime")
+      .map(x=>(x.get(0).toString,x.get(1).toString))
+      .groupByKey(x=>x._1)
+      .mapGroups{case(k, iter) => (k, iter.map(x => x._2).toList)}  //toList in order to keep the order of the events
+  }
+
+  /**
     * We assume that the events list contains no duplicates and they are sorted
     * If the events are A,B,C,D,E then pairs for computation are
     * AA, AB AC AD

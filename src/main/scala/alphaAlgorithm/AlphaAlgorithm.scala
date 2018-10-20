@@ -17,6 +17,7 @@ object AlphaAlgorithm {
     val traceTools: TraceTools = new TraceTools()
     val logPath = "src/main/resources/mockData.csv"
     val numOfTraces = 3
+    val readAll : Boolean = false
 
     val spark = SparkSession
       .builder()
@@ -25,7 +26,10 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    val tracesDS : Dataset[(String, List[String])] = traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
+    val tracesDS : Dataset[(String, List[String])] = readAll match {
+      case true => traceTools.readAllTracesFromCsvFile(logPath)
+      case false => traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
+    }
 
     val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
     println(petriNet)
