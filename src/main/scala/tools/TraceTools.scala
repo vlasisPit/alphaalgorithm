@@ -33,7 +33,8 @@ class TraceTools extends Serializable {
   /**
     * Read a specific number of traces (numOfTraces: Int) from a CSV file provided in path.
     * The CSV must contains the following columns
-    * "orderid", "eventname", "starttime"
+    * orderid", "eventname", "starttime", "endtime", "status"
+    * Only logs with status==Completed are examined
     * @param path
     * @param numOfTraces
     * @return
@@ -52,13 +53,13 @@ class TraceTools extends Serializable {
       .toList
 
     //Dataset[(String, List[String])]
-    return df.select("orderid", "eventname", "starttime")
+    return df.select("orderid", "eventname", "starttime", "endtime", "status")
       .where( df("orderid").isin(orderIds:_*))
+      .filter(df("status").isin(List("Completed"):_*))  //filtering - only the Completed traces
       .orderBy("starttime")
       .map(x=>(x.get(0).toString,x.get(1).toString))
       .groupByKey(x=>x._1)
       .mapGroups{case(k, iter) => (k, iter.map(x => x._2).toList)}  //toList in order to keep the order of the events
-    //.show(200,false)
   }
 
   /**
@@ -73,7 +74,8 @@ class TraceTools extends Serializable {
     val df = spark.read.format("csv").option("header", "true").load(path)
 
     //Dataset[(String, List[String])]
-    return df.select("orderid", "eventname", "starttime")
+    return df.select("orderid", "eventname", "starttime", "endtime", "status")
+      .filter(df("status").isin(List("Completed"):_*))  //filtering - only the Completed traces
       .orderBy("starttime")
       .map(x=>(x.get(0).toString,x.get(1).toString))
       .groupByKey(x=>x._1)

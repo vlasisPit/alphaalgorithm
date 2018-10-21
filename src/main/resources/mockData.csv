@@ -1,33 +1,33 @@
-orderid,eventname,starttime
-case1,DocumentCheck,2018-05-14 19:47:41
-case1,SyncronizeCustomer,2018-05-14 19:47:42
-case1,SyncronizeCustomerOrderUpdate,2018-05-14 19:52:17
-case1,ProvisionFulfill,2018-05-14 19:52:18
-case1,ProvisionInternetServices,2018-05-14 19:52:23
-case1,ProvisionUpdate,2018-05-14 20:42:30
-case1,ProvisionOrderUpdate,2018-05-14 20:45:14
-case1,Billing,2018-05-14 20:47:19
-case1,FulfillBillingOrderUpdate,2018-05-14 20:49:01
-case1,CompleteUpdate,2018-05-14 20:49:03
-case2,DocumentCheck,2018-05-24 08:10:52
-case2,SyncronizeCustomer,2018-05-24 08:10:55
-case2,SyncronizeCustomerOrderUpdate,2018-05-24 08:11:06
-case2,ProvisionFulfill,2018-05-24 08:11:07
-case2,ProvisionInternetServices,2018-05-24 08:11:13
-case2,ProvisionUpdate,2018-06-13 19:21:00
-case2,ProvisionOrderUpdate,2018-06-13 19:25:06
-case2,Billing,2018-06-13 19:27:10
-case2,FulfillBillingOrderUpdate,2018-06-13 19:28:12
-case2,CompleteUpdate,2018-06-13 19:28:14
-case3,DocumentCheck,2018-06-25 14:30:50
-case3,SyncronizeCustomer,2018-06-25 14:30:51
-case3,SyncronizeCustomerOrderUpdate,2018-06-25 14:31:39
-case3,ProvisionFulfill,2018-06-25 14:31:41
-case3,ProvisionInternetServices,2018-06-25 18:10:12
-case3,Transform to NewCateogry,2018-06-25 19:07:29
-case3,updated state of NewCateogry,2018-06-25 21:32:28
-case3,ProvisionUpdate,2018-07-05 08:41:10
-case3,ProvisionOrderUpdate,2018-07-05 08:51:13
-case3,Billing,2018-07-05 08:53:00
-case3,FulfillBillingOrderUpdate,2018-07-05 08:54:01
-case3,CompleteUpdate,2018-07-05 08:54:03
+orderid,eventname,starttime,endtime,status
+case1,DocumentCheck,2018-05-14 19:47:41,2018-05-14 19:47:42,Completed
+case1,SyncronizeCustomer,2018-05-14 19:47:42,2018-05-14 19:52:17,Completed
+case1,SyncronizeCustomerOrderUpdate,2018-05-14 19:52:17,2018-05-14 19:52:18,Completed
+case1,ProvisionFulfill,2018-05-14 19:52:18,2018-05-14 20:45:14,Completed
+case1,ProvisionInternetServices,2018-05-14 19:52:23,2018-05-14 20:42:30,Completed
+case1,ProvisionUpdate,2018-05-14 20:42:30,2018-05-14 20:42:31,Completed
+case1,ProvisionOrderUpdate,2018-05-14 20:45:14,2018-05-14 20:45:14,Completed
+case1,Billing,2018-05-14 20:47:19,2018-05-14 20:49:01,Completed
+case1,FulfillBillingOrderUpdate,2018-05-14 20:49:01,2018-05-14 20:49:02,Completed
+case1,CompleteUpdate,2018-05-14 20:49:03,2018-05-14 20:49:04,Completed
+case2,DocumentCheck,2018-05-24 08:10:52,2018-05-24 08:10:55,Completed
+case2,SyncronizeCustomer,2018-05-24 08:10:55,2018-05-24 08:11:06,Completed
+case2,SyncronizeCustomerOrderUpdate,2018-05-24 08:11:06,2018-05-24 08:11:06,Completed
+case2,ProvisionFulfill,2018-05-24 08:11:07,2018-06-13 19:25:06,Completed
+case2,ProvisionInternetServices,2018-05-24 08:11:13,2018-06-13 19:21:00,Completed
+case2,ProvisionUpdate,2018-06-13 19:21:00,2018-06-13 19:21:01,Completed
+case2,ProvisionOrderUpdate,2018-06-13 19:25:06,2018-06-13 19:25:06,Completed
+case2,Billing,2018-06-13 19:27:10,2018-06-13 19:28:11,Completed
+case2,FulfillBillingOrderUpdate,2018-06-13 19:28:12,2018-06-13 19:28:13,Completed
+case2,CompleteUpdate,2018-06-13 19:28:14,2018-06-13 19:28:15,Completed
+case3,DocumentCheck,2018-06-25 14:30:50,2018-06-25 14:30:51,Completed
+case3,SyncronizeCustomer,2018-06-25 14:30:51,2018-06-25 14:31:38,Completed
+case3,SyncronizeCustomerOrderUpdate,2018-06-25 14:31:39,2018-06-25 14:31:40,Completed
+case3,ProvisionFulfill,2018-06-25 14:31:41,2018-07-05 08:51:13,Completed
+case3,ProvisionInternetServices,2018-06-25 18:10:12,2018-07-04 09:12:53,Completed
+case3,TransformtoNewCateogry,2018-06-25 19:07:29,2018-07-04 09:04:49,Completed
+case3,updatedStateOfNewCategory,2018-06-25 21:32:28,2018-07-03 15:49:00,Completed
+case3,ProvisionUpdate,2018-07-05 08:41:10,2018-07-05 08:41:10,Completed
+case3,ProvisionOrderUpdate,2018-07-05 08:51:13,2018-07-05 08:51:13,Completed
+case3,Billing,2018-07-05 08:53:00,2018-07-05 08:54:01,Completed
+case3,FulfillBillingOrderUpdate,2018-07-05 08:54:01,2018-07-05 08:54:02,Completed
+case3,CompleteUpdate,2018-07-05 08:54:03,2018-07-05 08:54:04,Completed

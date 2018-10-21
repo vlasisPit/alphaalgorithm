@@ -31,6 +31,7 @@ object AlphaAlgorithm {
       case false => traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
     }
 
+    tracesDS.cache()
     val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
     println(petriNet)
 
