@@ -72,12 +72,6 @@ class TraceTools extends Serializable {
 
     val df = spark.read.format("csv").option("header", "true").load(path)
 
-    val orderIds = df.select("orderid")
-      .distinct()
-      .as(Encoders.STRING)
-      .collect()
-      .toList
-
     //Dataset[(String, List[String])]
     return df.select("orderid", "eventname", "starttime")
       .orderBy("starttime")
