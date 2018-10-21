@@ -17,7 +17,7 @@ object AlphaAlgorithm {
     val traceTools: TraceTools = new TraceTools()
     val logPath = "src/main/resources/mockData.csv"
     val numOfTraces = 3
-    val readAll : Boolean = false
+    val readAll : Boolean = true
 
     val spark = SparkSession
       .builder()

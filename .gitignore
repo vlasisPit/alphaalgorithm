@@ -19,3 +19,4 @@ project/plugins/project/
 
 # Real CSV data
 src/main/resources/realData.csv
+src/main/resources/readDataFiltered.csv
