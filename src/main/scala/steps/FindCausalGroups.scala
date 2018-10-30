@@ -48,6 +48,8 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .map(x=>x._1)
       .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
 
+    directCausalGroups.cache()
+
     val causalGroupsFromLeft = directCausalGroups
       .groupByKey(x=>x.getFirstGroup())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
@@ -103,13 +105,11 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     */
   def checkIfNeverFollowRelationIsValidAndBreakTheGroup(events: Set[String]): List[Set[String]] = {
     //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
-    val spark = SparkSession.builder().getOrCreate()
-    import spark.implicits._
     val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations[String](events.toList)
-    val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations().toDS()
-    val groups = allPossibleCombinations.filter(x=>allRelationsAreNeverFollow(x))
+    val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations()
+    val groups = allPossibleCombinations
+      .filter(x=>allRelationsAreNeverFollow(x))
       .filter(x=>x.size>1)
-      .collect().toList
 
     return groups
   }
