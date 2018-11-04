@@ -19,7 +19,6 @@ class TraceTools extends Serializable {
 
     // Convert to a DataSet
     val tracesDS = traces.toDS()
-    tracesDS.cache()
     return tracesDS
   }
 

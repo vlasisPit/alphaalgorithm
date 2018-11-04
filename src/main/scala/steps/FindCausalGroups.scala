@@ -43,11 +43,13 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
 
   def extractCausalGroups():List[CausalGroup[String]] = {
+    logRelations.cache()
     val directCausalGroups = logRelations
       .filter(x=>x._2==Relation.CAUSALITY.toString)
       .map(x=>x._1)
       .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
 
+    logRelations.unpersist()
     directCausalGroups.cache()
 
     val causalGroupsFromLeft = directCausalGroups
@@ -64,6 +66,8 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
       .flatMap(x=> createFinalCausalGroupsRight(x))
+
+    directCausalGroups.unpersist()
 
     return directCausalGroups.collect.toList :::
             causalGroupsFromLeft.collect.toList :::

@@ -31,7 +31,6 @@ object AlphaAlgorithm {
       case false => traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
     }
 
-    tracesDS.cache()
     val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
     println(petriNet)
 
@@ -48,6 +47,7 @@ object AlphaAlgorithm {
   def executeAlphaAlgorithm(tracesDS : Dataset[(String, List[String])]) : PetriNet = {
 
     val steps : AlphaAlgorithmSteps = new AlphaAlgorithmSteps()
+    tracesDS.cache()
 
     //Step 1 - Find all transitions / events, Sorted list of all event types
     val events = steps.getAllEvents(tracesDS)
@@ -60,6 +60,7 @@ object AlphaAlgorithm {
 
     //Step 4 - Footprint graph - Causal groups
     val logRelations : Dataset[(Pair, String)] = steps.getFootprintGraph(tracesDS, events)
+    tracesDS.unpersist()
     val causalGroups : List[CausalGroup[String]] = steps.getCausalGroups(logRelations)
 
     //Step 5 - compute only maximal groups

@@ -98,7 +98,8 @@ class AlphaAlgorithmSteps extends Serializable {
       .map(x=>findLogRelations.getDirectAndInverseFollowRelations(x))
       .map(x=>findLogRelations.extractFootPrintGraph(x._1, x._2, x._3))
 
-    logRelations.cache()
+    pairInfo.unpersist()
+    return logRelations
   }
 
   /**
