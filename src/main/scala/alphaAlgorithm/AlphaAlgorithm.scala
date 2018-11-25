@@ -63,6 +63,7 @@ object AlphaAlgorithm {
     tracesDS.unpersist()
     val causalGroups : List[CausalGroup[String]] = steps.getCausalGroups(logRelations)
 
+    //TODO better return datasets
     //Step 5 - compute only maximal groups
     val maximalGroups : List[CausalGroup[String]] = steps.getMaximalGroups(causalGroups)
 

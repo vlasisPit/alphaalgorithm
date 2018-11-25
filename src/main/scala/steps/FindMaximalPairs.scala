@@ -1,8 +1,14 @@
 package steps
 
-import misc.{CausalGroup, Pair}
+import misc.CausalGroup
 import org.apache.spark.sql._
 
+/**
+  * extract_2 is deprecated by extract, because it was necessary to reduce the memory amount in order to run it
+  * in a real dataset.
+  * With the extract solution it is not necessary to compute all possible pair combinations and save them on memory.
+  * @param causalGroups
+  */
 @SerialVersionUID(100L)
 class FindMaximalPairs(val causalGroups: List[CausalGroup[String]]) extends Serializable {
 
@@ -22,17 +28,14 @@ class FindMaximalPairs(val causalGroups: List[CausalGroup[String]]) extends Seri
     val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
 
-    val causalGroupsToDelete =possibleCausalGroupsCombinations()
-        .toDS()
-        .filter(x=>isSubsetOf(x._1, x._2))
-        .map(x=>x._1)
-        .collect()
-        .toSet
-
     return causalGroups.toDS()
-      .filter(x=> !causalGroupsToDelete.contains(x))
+      .filter(x=>toBeRetained(x))
       .collect()
-      .toList
+      .toList;
+  }
+
+  def toBeRetained(toCheck: CausalGroup[String]): Boolean = {
+    return causalGroups.filter(x=>x!=toCheck && isSubsetOf(toCheck, x)).isEmpty;
   }
 
   /**
@@ -42,11 +45,30 @@ class FindMaximalPairs(val causalGroups: List[CausalGroup[String]]) extends Seri
     * @return
     */
   def isSubsetOf(group1 : (CausalGroup[String]), group2 : CausalGroup[String]) : Boolean = {
-    if (group1.getFirstGroup().subsetOf(group2.getFirstGroup()) && group1.getSecondGroup().subsetOf(group2.getSecondGroup())) {
-      true
-    } else {
-      false
-    }
+    return group1.getFirstGroup().subsetOf(group2.getFirstGroup()) && group1.getSecondGroup().subsetOf(group2.getSecondGroup())
+  }
+
+  /**
+    * From all causal groups, keep only the maximal. Example from
+    * ({a},{b}) and ({a}, {b,c}) keep only ({a}, {b,c})
+    * @return
+    */
+  @Deprecated
+  def extract_2(): List[CausalGroup[String]] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+
+    val causalGroupsToDelete =possibleCausalGroupsCombinations()
+      .toDS()
+      .filter(x=>isSubsetOf(x._1, x._2))
+      .map(x=>x._1)
+      .collect()
+      .toSet
+
+    return causalGroups.toDS()
+      .filter(x=> !causalGroupsToDelete.contains(x))
+      .collect()
+      .toList
   }
 
   /**
@@ -62,6 +84,7 @@ class FindMaximalPairs(val causalGroups: List[CausalGroup[String]]) extends Seri
     * @param groups
     * @return
     */
+  @Deprecated
   def possibleCausalGroupsCombinations(): List[(CausalGroup[String], CausalGroup[String])] = {
     return for {
       (x, idxX) <- causalGroups.zipWithIndex
