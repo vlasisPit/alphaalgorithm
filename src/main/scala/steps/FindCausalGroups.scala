@@ -28,7 +28,8 @@ import org.apache.spark.sql._
 @SerialVersionUID(100L)
 class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serializable {
 
-  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).collect.toList
+  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct()
+  val causalityRelationPairs = logRelations.filter(x=>x._2==Relation.CAUSALITY.toString).map(x=>x._1).distinct()
 
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
@@ -44,78 +45,69 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
 
   def extractCausalGroups():List[CausalGroup[String]] = {
     logRelations.cache()
-    val directCausalGroups = logRelations
+    val directCausalRelations = logRelations
       .filter(x=>x._2==Relation.CAUSALITY.toString)
       .map(x=>x._1)
-      .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
+      .map(x=>(x.member1, x.member2))
 
     logRelations.unpersist()
-    directCausalGroups.cache()
+    directCausalRelations.cache()
 
-    val causalGroupsFromLeft = directCausalGroups
-      .groupByKey(x=>x.getFirstGroup())
-      .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
-      .filter(x=>x._2.size>1)
-      .map(x=>new CausalGroup(x._1, x._2))
-      .flatMap(x=> createFinalCausalGroupsLeft(x))
+    val uniqueEventsFromLeftSideEvents = directCausalRelations
+      .map(causal => causal._1)
+      .distinct()
+      .collect()
+      .toList
 
-    val causalGroupsFromRight = directCausalGroups
-      .map(x=>new CausalGroup(x.getSecondGroup(), x.getFirstGroup()))
-      .groupByKey(x=>x.getFirstGroup())
-      .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
-      .filter(x=>x._2.size>1)
-      .map(x=>new CausalGroup(x._1, x._2))
-      .flatMap(x=> createFinalCausalGroupsRight(x))
+    val causalGroupFromLeftSide = extractCausalGroupPart(uniqueEventsFromLeftSideEvents);
 
-    directCausalGroups.unpersist()
+    val uniqueEventsFromRightSideEvents = directCausalRelations
+      .map(causal => causal._2)
+      .distinct()
+      .collect()
+      .toList
 
-    return directCausalGroups.collect.toList :::
-            causalGroupsFromLeft.collect.toList :::
-            causalGroupsFromRight.collect.toList
+    val causalGroupFromRightSide = extractCausalGroupPart(uniqueEventsFromRightSideEvents);
+
+    computeCausalGroups(causalGroupFromLeftSide, causalGroupFromRightSide)
   }
 
-  /**
-    * Input a causal group which we have to inspect for breaking to more groups,
-    * if NeverFollow relation is not valid
-    * Example causal group {a} -> {b,c,e}
-    * to {a} -> {b,e} and {a} -> {c,e}
-    */
-  def createFinalCausalGroupsLeft(causalGroup: CausalGroup[String]): List[CausalGroup[String]] = {
-    return checkIfNeverFollowRelationIsValidAndBreakTheGroup(causalGroup.getSecondGroup())
-      .map(x => new CausalGroup(causalGroup.getFirstGroup(), x))
+  def computeCausalGroups(causalGroupFromLeftSide: List[Set[String]], causalGroupFromRightSide: List[Set[String]]): List[CausalGroup[String]] = {
+    for {
+      groupA <- causalGroupFromLeftSide
+      groupB <- causalGroupFromRightSide
+      if ( (!groupA.isEmpty && !groupB.isEmpty) && (groupA != groupB) && isCausalRelationValid(groupA, groupB))
+    } yield new CausalGroup(groupA,groupB)
   }
 
-  /**
-    * Input a causal group which we have to inspect for breaking to more groups,
-    * if NeverFollow relation is not valid
-    * Example causal group {b,c,e} ->  {a}
-    * to {b,e} -> {d} and {c,e} -> {d}
-    */
-  def createFinalCausalGroupsRight(causalGroup: CausalGroup[String]): List[CausalGroup[String]] = {
-    return checkIfNeverFollowRelationIsValidAndBreakTheGroup(causalGroup.getSecondGroup())
-      .map(x => new CausalGroup(x, causalGroup.getFirstGroup()))
+  def isCausalRelationValid(groupA: Set[String], groupB: Set[String]): Boolean = {
+    val flags = for {
+      grA <- groupA
+      grB <- groupB
+      if ( (!grA.isEmpty && !grB.isEmpty) && (grA != grB))
+    } yield allEventsAreInCausalityRelation(groupA, groupB)
+
+    return flags.filter(flag => flag==false).isEmpty
   }
 
-  /**
-    * From causal groups provided, we must check if the relation NEVER_FOLLOW is valid.
-    * If not the causal group must be broken to more groups.
-    * For example suppose we have a causal group
-    * {a} -> {b,c,e}
-    * The next step is to check if for all events in {b,c,e}, all events relations are NEVER_FOLLOW.
-    * If yes, {b,c,e} stay as is.
-    * If not the algorithm must break down the set in more sets for which NEVER_FOLLOW is valid.
-    *
-    * @param causalGroupNotCompleted
-    */
-  def checkIfNeverFollowRelationIsValidAndBreakTheGroup(events: Set[String]): List[Set[String]] = {
-    //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations[String](events.toList)
-    val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations()
-    val groups = allPossibleCombinations
-      .filter(x=>allRelationsAreNeverFollow(x))
-      .filter(x=>x.size>1)
+  def allEventsAreInCausalityRelation(groupA: Set[String], groupB: Set[String]): Boolean = {
+    val pairs = for {
+      eventA <- groupA
+      eventB <- groupB
+    } yield new Pair(eventA, eventB)
 
-    return groups
+    for {
+      pair <- pairs
+    } yield if (!isCausalityRelation(pair)) { return false }
+
+    true
+  }
+
+  def extractCausalGroupPart(uniqueEvents: List[String]): List[Set[String]] = {
+    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(uniqueEvents);
+    val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
+    combinations
+      .filter(subCategory=>allRelationsAreNeverFollow(subCategory))
   }
 
   /**
@@ -132,7 +124,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       if idxX < idxY
     } yield new Pair(x,y)
     val numberOfNeverFollowPairs = allPossiblePairs
-      .filter(x=> (neverFollowPairs.contains(x) || neverFollowPairs.contains(createInversePair(x))))
+      .filter(pair=> isNeverFollowed(pair) || isNeverFollowed(createInversePair(pair)))
       .toList.length
 
     if (numberOfNeverFollowPairs == allPossiblePairs.size) true else false
@@ -141,4 +133,13 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
   def createInversePair(pair : Pair): Pair = {
     return new Pair(pair.getSecondMember(), pair.getFirstMember())
   }
+
+  def isNeverFollowed(pair: Pair): Boolean = {
+    return neverFollowPairs.filter(x=>x==pair).count()!=0;
+  }
+
+  def isCausalityRelation(pair: Pair): Boolean = {
+    return causalityRelationPairs.filter(x=>x==pair).count()!=0;
+  }
+
 }

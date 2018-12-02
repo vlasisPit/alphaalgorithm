@@ -296,45 +296,39 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(allRelationsAreNeverFollow==true)
   }
 
-  test("NeverFollow Relation is not valid. There is one PARALLELISM relation. Group must be broken") {
+  /**
+    * a # b,
+    * c # d,
+    * a->c,
+    * a->d,
+    * b->c,
+    * b->d
+    */
+  test("2 groups with 2 places each") {
     val logRelations = Seq(
-      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("B", "C"), Relation.PARALLELISM.toString),
-      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString))
+      (new Pair("A", "D"), Relation.CAUSALITY.toString),
+      (new Pair("A", "C"), Relation.CAUSALITY.toString),
+      (new Pair("B", "D"), Relation.CAUSALITY.toString),
+      (new Pair("B", "C"), Relation.CAUSALITY.toString),
+      (new Pair("A", "B"), Relation.NEVER_FOLLOW.toString),
+      (new Pair("C", "D"), Relation.NEVER_FOLLOW.toString))
       .toDS();
 
-    val groupEvents: Set[String] = Set("B", "C", "E")
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
+    val causalGroups = findCausalGroups.extractCausalGroups()
 
-    val newGroups = findCausalGroups.checkIfNeverFollowRelationIsValidAndBreakTheGroup(groupEvents)
-    assert(newGroups.contains(Set("C", "E")))
-    assert(newGroups.contains(Set("B", "E")))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A", "B"), Set("C", "D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A", "B"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A", "B"), Set("D"))))
 
-    assert(newGroups.size==2)
-  }
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C", "D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("D"))))
 
-  test("NeverFollow Relation is valid. Group must not be broken") {
-    val logRelations = Seq(
-      (new Pair("A", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("B", "C"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("A", "A"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("C", "E"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("D", "D"), Relation.NEVER_FOLLOW.toString),
-      (new Pair("B", "E"), Relation.NEVER_FOLLOW.toString))
-      .toDS();
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("C", "D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
 
-    val groupEvents: Set[String] = Set("B", "C", "E")
-    val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-
-    val newGroups = findCausalGroups.checkIfNeverFollowRelationIsValidAndBreakTheGroup(groupEvents)
-    assert(newGroups.contains(Set("B", "C", "E")))
-    assert(newGroups.contains(Set("B", "C")))
-    assert(newGroups.contains(Set("B", "E")))
-    assert(newGroups.contains(Set("C", "E")))
-
-    assert(newGroups.size==4)
+    assert(causalGroups.size==9)
   }
 }
