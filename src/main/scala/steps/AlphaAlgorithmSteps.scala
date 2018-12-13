@@ -108,7 +108,7 @@ class AlphaAlgorithmSteps extends Serializable {
     * @param logRelations
     * @return
     */
-  def getCausalGroups(logRelations: Dataset[(Pair, String)]): List[CausalGroup[String]] = {
+  def getCausalGroups(logRelations: Dataset[(Pair, String)]): Dataset[CausalGroup[String]] = {
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
     findCausalGroups.extractCausalGroups()
   }
@@ -118,7 +118,7 @@ class AlphaAlgorithmSteps extends Serializable {
     * @param causalGroups
     * @return
     */
-  def getMaximalGroups(causalGroups: List[CausalGroup[String]]): List[CausalGroup[String]] = {
+  def getMaximalGroups(causalGroups: Dataset[CausalGroup[String]]): List[CausalGroup[String]] = {
     val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(causalGroups)
     findMaximalPairs.extract()
   }
