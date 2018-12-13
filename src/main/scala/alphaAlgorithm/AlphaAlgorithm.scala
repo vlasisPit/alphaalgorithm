@@ -61,7 +61,7 @@ object AlphaAlgorithm {
     //Step 4 - Footprint graph - Causal groups
     val logRelations : Dataset[(Pair, String)] = steps.getFootprintGraph(tracesDS, events)
     tracesDS.unpersist()
-    val causalGroups : List[CausalGroup[String]] = steps.getCausalGroups(logRelations)
+    val causalGroups : Dataset[CausalGroup[String]] = steps.getCausalGroups(logRelations)
 
     //TODO better return datasets
     //Step 5 - compute only maximal groups
