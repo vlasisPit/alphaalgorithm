@@ -331,4 +331,5 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
 
     assert(causalGroups.size==9)
   }
+
 }

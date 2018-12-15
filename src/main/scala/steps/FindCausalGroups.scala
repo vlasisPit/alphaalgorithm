@@ -31,19 +31,23 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
   val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct()
   val causalityRelationPairs = logRelations.filter(x=>x._2==Relation.CAUSALITY.toString).map(x=>x._1).distinct()
 
+  implicit def stringEncoder: org.apache.spark.sql.Encoder[(String, String)] = org.apache.spark.sql.Encoders.kryo[(String, String)]
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
+
+ /*
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
-  implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
   implicit def rowEncoder: org.apache.spark.sql.Encoder[Row] = org.apache.spark.sql.Encoders.kryo[Row]
   implicit def pairStringEncoder: org.apache.spark.sql.Encoder[(Pair, String)] = org.apache.spark.sql.Encoders.kryo[(Pair, String)]
-  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]
+  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]*/
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
 
-  def extractCausalGroups():List[CausalGroup[String]] = {
+  /*def extractCausalGroups():List[CausalGroup[String]] = {
+    implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
+
     logRelations.cache()
     val directCausalRelations = logRelations
       .filter(x=>x._2==Relation.CAUSALITY.toString)
@@ -70,7 +74,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     val causalGroupFromRightSide = extractCausalGroupPart(uniqueEventsFromRightSideEvents);
 
     computeCausalGroups(causalGroupFromLeftSide, causalGroupFromRightSide)
-  }
+  }*/
 
   def computeCausalGroups(causalGroupFromLeftSide: List[Set[String]], causalGroupFromRightSide: List[Set[String]]): List[CausalGroup[String]] = {
     for {
@@ -142,4 +146,82 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     return causalityRelationPairs.filter(x=>x==pair).count()!=0;
   }
 
+  def extractCausalGroups(): List[CausalGroup[String]] = {
+    val spark = SparkSession.builder().getOrCreate()
+    import spark.implicits._
+    import org.apache.spark.sql.functions._
+
+    val delimeter = "%%%%";
+
+    val never = logRelations
+      .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
+      .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+      .withColumn("col1", split(col("value"), delimeter).getItem(0))
+      .withColumn("col2", split(col("value"), delimeter).getItem(1))
+      .drop("value")
+
+    val causality = logRelations
+      .filter(x=>x._2==Relation.CAUSALITY.toString)
+      .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+      .withColumn("col1", split(col("value"), delimeter).getItem(0))
+      .withColumn("col2", split(col("value"), delimeter).getItem(1))
+      .drop("value")
+
+    val leftEvents = causality.join(never)
+      .where(causality.col("col1")===never.col("col1") || causality.col("col1")===never.col("col2"))
+      .drop(never.col("col1"))
+      .drop(never.col("col2"))
+      .drop(causality.col("col2"))
+      .distinct()
+      .toDF("leftEvents")
+      .show(400)
+
+    val rightEvents = causality.join(never)
+      .where(causality.col("col2")===never.col("col1") || causality.col("col2")===never.col("col2"))
+      .drop(never.col("col1"))
+      .drop(never.col("col2"))
+      .drop(causality.col("col1"))
+      .distinct()
+      .toDF("rightEvents")
+
+    /*val pairs = leftEvents
+      .join(rightEvents)
+      .join(causality)
+      .where(leftEvents.col("leftEvents") ===causality.col("col1") && rightEvents.col("rightEvents")===causality.col("col2"))
+      .drop("col1")
+      .drop("col2")
+
+    val uniqueLeftEvents = pairs
+      .select(pairs.col("leftEvents"))
+      .map(x=>x.get(0).toString)
+      .distinct()
+      .collect()
+      .toList
+
+    val uniqueRightEvents = pairs
+      .select(pairs.col("rightEvents"))
+      .map(x=>x.get(0).toString)
+      .distinct()
+      .collect()
+      .toList
+
+    val causalGroupFromLeftSide = extractCausalGroups(uniqueLeftEvents);
+    val causalGroupFromRightSide = extractCausalGroups(uniqueRightEvents);
+
+    getCausalGroups(causalGroupFromLeftSide, causalGroupFromRightSide)*/
+    null
+  }
+
+  def extractCausalGroups(uniqueEvents: List[String]): List[Set[String]] = {
+    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(uniqueEvents);
+    possibleCombinations.extractAllPossibleCombinations();
+  }
+
+  def getCausalGroups(causalGroupFromLeftSide: List[Set[String]], causalGroupFromRightSide: List[Set[String]]): List[CausalGroup[String]] = {
+    for {
+      groupA <- causalGroupFromLeftSide
+      groupB <- causalGroupFromRightSide
+      if ( (!groupA.isEmpty && !groupB.isEmpty) && (groupA != groupB))
+    } yield new CausalGroup(groupA,groupB)
+  }
 }
