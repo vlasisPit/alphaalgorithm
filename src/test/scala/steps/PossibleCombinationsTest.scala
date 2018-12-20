@@ -1,13 +1,26 @@
 package steps
 
+import org.apache.log4j.{Level, Logger}
+import org.apache.spark.sql.{Dataset, SparkSession}
 import org.scalatest.FunSuite
 
 class PossibleCombinationsTest extends FunSuite {
 
-  test("Extract possible combinations from 3 member list") {
-    val groupEvents : List[String] = List("B", "C", "E")
+  val spark = SparkSession
+    .builder()
+    .appName("AlphaAlgorithm-FindCausalGroupsTest")
+    .master("local[*]")
+    .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
+    .getOrCreate()
 
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(groupEvents);
+  import spark.implicits._
+
+  Logger.getLogger("org").setLevel(Level.ERROR)
+
+  test("Extract possible combinations from 3 member list") {
+    val groupEvents : Dataset[String] = List("B", "C", "E").toDS()
+
+    val possibleCombinations : PossibleCombinations = new PossibleCombinations(groupEvents);
     val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
 
     assert(combinations.contains(Set()))
@@ -23,9 +36,9 @@ class PossibleCombinationsTest extends FunSuite {
   }
 
   test("Extract possible combinations from 4 member list") {
-    val groupEvents : List[String] = List("B", "C", "D", "E")
+    val groupEvents : Dataset[String] = List("B", "C", "D", "E").toDS()
 
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(groupEvents);
+    val possibleCombinations : PossibleCombinations = new PossibleCombinations(groupEvents);
     val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
 
     assert(combinations.contains(Set()))

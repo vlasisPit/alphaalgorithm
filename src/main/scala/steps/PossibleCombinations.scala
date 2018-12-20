@@ -1,22 +1,26 @@
 package steps
 
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.Dataset
+
 /**
   * Find all possible sub-groups for a given data set
+  *
   * @param events
   * @tparam T
   */
-class PossibleCombinations[T](val events: List[T]) {
+class PossibleCombinations(val events: Dataset[String]) {
 
-  def extractAllPossibleCombinations(): List[Set[T]] = {
-    var groups : List[Set[T]] = List()
+  def extractAllPossibleCombinations(): List[Set[String]] = {
+    var groups : List[Set[String]] = List()
 
-    for( i <- 0 to scala.math.pow(2,events.size).toInt-1 ){
-      val counterBinary = convertToBinary(i, events.size)
+    for( i <- 0 to scala.math.pow(2,events.count()).toInt-1 ){
+      val counterBinary = convertToBinary(i, events.count().toInt)
 
-      var group : Set[T] = Set()
+      var group : Set[String] = Set()
       for (j <- 0 to (counterBinary.length-1)) {
         if (counterBinary.charAt(j) == '1') {
-          group = group + events(j)
+          group = group + getSpecificElementFromDataset(j)
         }
       }
       groups = group :: groups
@@ -24,6 +28,16 @@ class PossibleCombinations[T](val events: List[T]) {
     }
 
     return groups
+  }
+
+  def getSpecificElementFromDataset(index: Int) : String = {
+    val eventsRdd : RDD[String]= events.rdd
+
+    eventsRdd
+      .zipWithIndex
+      .filter(x=>x._2==index)
+      .map(x=>x._1)
+      .first()
   }
 
   def convertToBinary(i: Int, targetLength: Int) : String = {

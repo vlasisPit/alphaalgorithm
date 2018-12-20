@@ -1,8 +1,9 @@
 package steps
 
+import java.util.concurrent.TimeUnit
+
 import misc.{CausalGroup, Pair, Relation}
 import org.apache.spark.sql._
-import org.apache.spark.sql.functions.{col, split}
 
 /**
   * Accept us input footprint's graph data. In the following form
@@ -32,6 +33,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
  /* val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().toDF("never")
   val causalityRelationPairs = logRelations.filter(x=>x._2==Relation.CAUSALITY.toString).map(x=>x._1).distinct().toDF("causal")*/
   //implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
+  val spark = SparkSession.builder().getOrCreate()
   implicit def string2stringEncoder: org.apache.spark.sql.Encoder[(String, String)] = org.apache.spark.sql.Encoders.kryo[(String, String)]
 
  /* val spark = SparkSession.builder().getOrCreate()
@@ -78,16 +80,12 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     val uniqueEventsFromLeftSideEvents = directCausalRelations
       .map(causal => causal._1)
       .distinct()
-      .collect()
-      .toList
 
     val causalGroupFromLeftSide = extractCausalGroupPart(uniqueEventsFromLeftSideEvents);
 
     val uniqueEventsFromRightSideEvents = directCausalRelations
       .map(causal => causal._2)
       .distinct()
-      .collect()
-      .toList
 
     val causalGroupFromRightSide = extractCausalGroupPart(uniqueEventsFromRightSideEvents);
 
@@ -125,9 +123,13 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     true
   }
 
-  def extractCausalGroupPart(uniqueEvents: List[String]): List[Set[String]] = {
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(uniqueEvents);
+  def extractCausalGroupPart(uniqueEvents: Dataset[String]): List[Set[String]] = {
+    val t0 = System.nanoTime()
+    val possibleCombinations : PossibleCombinations = new PossibleCombinations(uniqueEvents);
     val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
+    val t1 = System.nanoTime()
+    println("Elapsed time compute never follow each: All possible comb " + TimeUnit.SECONDS.convert(t1 - t0, TimeUnit.NANOSECONDS) + "sec")
+
     combinations
       .filter(subCategory=>allRelationsAreNeverFollow(subCategory))
   }
@@ -145,16 +147,14 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       (y, idxY) <- possibleGroup.zipWithIndex
       if idxX < idxY
     } yield new Pair(x,y)
-    val numberOfNeverFollowPairs = allPossiblePairs
-      //.filter(pair=> neverFollowPairs.contains(pair) || neverFollowPairs.contains(createInversePair(pair)))
-      .filter(pair=> isNeverFollow(pair) || isNeverFollow(createInversePair(pair)))
-      .toList.length
+    val atLeastOneNotNeverFollowe = allPossiblePairs
+      .find(pair=> isNotNeverFollow(pair) || isNotNeverFollow(createInversePair(pair)))  //find the first element in the collection which matches the predicate.
 
-    if (numberOfNeverFollowPairs == allPossiblePairs.size) true else false
+    atLeastOneNotNeverFollowe.isEmpty
   }
 
-  def isNeverFollow(pair: Pair): Boolean = {
-    val spark = SparkSession.builder().getOrCreate()
+  def isNotNeverFollow(pair: Pair): Boolean = {
+    val t0 = System.nanoTime()
     import spark.implicits._
     import org.apache.spark.sql.functions._
     val delimeter = "%%%%";
@@ -166,10 +166,14 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .withColumn("col2", split(col("value"), delimeter).getItem(1))
       .drop("value")
 
-    never.filter(never.col("col1")===pair.getFirstMember() && never.col("col2")===pair.getSecondMember())
-      .count()!=0;
-    /*never.where(never.col("col1")===pair.getFirstMember() && never.col("col2")===pair.getSecondMember())
-      .count()!=0;*/
+    val num = never
+      .filter((never.col("col1")===pair.getFirstMember() && never.col("col2")===pair.getSecondMember()) || (never.col("col1")===pair.getSecondMember() && never.col("col2")===pair.getFirstMember()))
+      .count()
+
+    val t1 = System.nanoTime()
+    println("Elapsed time compute never follow each: " + TimeUnit.MILLISECONDS.convert(t1 - t0, TimeUnit.NANOSECONDS) + "ms")
+
+    num==0
   }
 
   def isCausal(pair: Pair): Boolean = {
@@ -276,7 +280,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
 
     getCausalGroups(causalGroupFromLeftSide, causalGroupFromRightSide)
     null
-  }*/
+  }
 
   def extractCausalGroups(uniqueEvents: List[String]): List[Set[String]] = {
     val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations(uniqueEvents);
@@ -289,7 +293,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       groupB <- causalGroupFromRightSide
       if ( (!groupA.isEmpty && !groupB.isEmpty) && (groupA != groupB))
     } yield new CausalGroup(groupA,groupB)
-  }
+  }*/
 
 
 
