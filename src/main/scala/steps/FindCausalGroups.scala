@@ -1,7 +1,7 @@
 package steps
 
 import misc.{CausalGroup, Pair, Relation}
-import org.apache.spark.sql._
+import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
 
 /**
   * Accept us input footprint's graph data. In the following form
@@ -27,20 +27,21 @@ import org.apache.spark.sql._
   */
 @SerialVersionUID(100L)
 class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serializable {
-
-  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().collect().toList
-
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
-  implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
-  implicit def rowEncoder: org.apache.spark.sql.Encoder[Row] = org.apache.spark.sql.Encoders.kryo[Row]
+  //implicit def tupleEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
   implicit def pairStringEncoder: org.apache.spark.sql.Encoder[(Pair, String)] = org.apache.spark.sql.Encoders.kryo[(Pair, String)]
   implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
+
+  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().collect().toList
+
+  val spark = SparkSession.builder().getOrCreate()
+  import spark.implicits._
 
   def extractCausalGroups():Dataset[CausalGroup[String]] = {
     val directCausalGroups = logRelations
@@ -103,7 +104,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     */
   def checkIfNeverFollowRelationIsValidAndBreakTheGroup(events: Set[String]): List[Set[String]] = {
     //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
-    val possibleCombinations : PossibleCombinations[String] = new PossibleCombinations[String](events.toList)
+    val possibleCombinations : PossibleCombinations = new PossibleCombinations(events.toList.toDS())
     val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations()
     val groups = allPossibleCombinations
       .filter(x=>allRelationsAreNeverFollow(x))

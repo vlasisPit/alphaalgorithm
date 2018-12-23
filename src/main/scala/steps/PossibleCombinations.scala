@@ -1,45 +1,35 @@
 package steps
 
+import org.apache.spark.sql.{Dataset, SparkSession}
+
 /**
   * Find all possible sub-groups for a given data set
   * @param events
-  * @tparam T
   */
-class PossibleCombinations[T](val events: List[T]) {
+@SerialVersionUID(100L)
+class PossibleCombinations(val events: Dataset[String]) extends Serializable {
+  val spark = SparkSession.builder().getOrCreate()
+  implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
+  implicit def stringTupleEncoder: org.apache.spark.sql.Encoder[(String, String)] = org.apache.spark.sql.Encoders.kryo[(String, String)]
+  implicit def setStringEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
+  implicit def intStringEncoder: org.apache.spark.sql.Encoder[(Int, String)] = org.apache.spark.sql.Encoders.kryo[(Int, String)]
+  implicit def listStringEncoder: org.apache.spark.sql.Encoder[(String, List[String])] = org.apache.spark.sql.Encoders.kryo[(String, List[String])]
 
-  def extractAllPossibleCombinations(): List[Set[T]] = {
-    var groups : List[Set[T]] = List()
+  def extractAllPossibleCombinations(): List[Set[String]] = {
+    val eventsNum = events.count().toInt
 
-    for( i <- 0 to scala.math.pow(2,events.size).toInt-1 ){
-      val counterBinary = convertToBinary(i, events.size)
+    val eventsList = events
+      .map(ev=>(eventsNum.toString, ev))
+      .groupByKey(x=>x._1)
+      .mapGroups{case(k, iter) => (k, iter.map(x => x._2).toList)}
+      .first()
+      ._2
 
-      var group : Set[T] = Set()
-      for (j <- 0 to (counterBinary.length-1)) {
-        if (counterBinary.charAt(j) == '1') {
-          group = group + events(j)
-        }
-      }
-      groups = group :: groups
+    (1 to eventsNum).flatMap(eventsList.combinations)
+        .map(x=>x.toSet)
+        .toList
 
-    }
 
-    return groups
-  }
-
-  def convertToBinary(i: Int, targetLength: Int) : String = {
-    val num : String = i.toBinaryString
-
-    if (num.length==targetLength) {
-      return num
-    } else {
-      val numberOfZerosToAdd = targetLength-num.length
-      var zeros = ""
-      for (i <- 0 to numberOfZerosToAdd-1) {
-        zeros = zeros + "0"
-      }
-
-      return zeros + num
-    }
   }
 
 }
