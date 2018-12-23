@@ -23,7 +23,6 @@ class PossibleCombinationsTest extends FunSuite {
     val possibleCombinations : PossibleCombinations = new PossibleCombinations(groupEvents);
     val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
 
-    assert(combinations.contains(Set()))
     assert(combinations.contains(Set("E")))
     assert(combinations.contains(Set("C")))
     assert(combinations.contains(Set("C","E")))
@@ -32,7 +31,7 @@ class PossibleCombinationsTest extends FunSuite {
     assert(combinations.contains(Set("B","C")))
     assert(combinations.contains(Set("B","C","E")))
 
-    assert(combinations.length==8)
+    assert(combinations.length==7)
   }
 
   test("Extract possible combinations from 4 member list") {
@@ -41,7 +40,6 @@ class PossibleCombinationsTest extends FunSuite {
     val possibleCombinations : PossibleCombinations = new PossibleCombinations(groupEvents);
     val combinations : List[Set[String]] = possibleCombinations.extractAllPossibleCombinations();
 
-    assert(combinations.contains(Set()))
     assert(combinations.contains(Set("E")))
     assert(combinations.contains(Set("D")))
     assert(combinations.contains(Set("D","E")))
@@ -61,7 +59,7 @@ class PossibleCombinationsTest extends FunSuite {
     assert(combinations.contains(Set("B","C","D")))
     assert(combinations.contains(Set("B","C","D","E")))
 
-    assert(combinations.length==16)
+    assert(combinations.length==15)
   }
 
 }
