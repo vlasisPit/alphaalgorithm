@@ -104,7 +104,7 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     */
   def checkIfNeverFollowRelationIsValidAndBreakTheGroup(events: Set[String]): List[Set[String]] = {
     //eg {b,c,e}. Maybe these events are connected with some not NOT-FOLLOW relation, so the group must be broken
-    val possibleCombinations : PossibleCombinations = new PossibleCombinations(events.toList.toDS())
+    val possibleCombinations : PossibleCombinations = new PossibleCombinations(events.toList)
     val allPossibleCombinations = possibleCombinations.extractAllPossibleCombinations()
     val groups = allPossibleCombinations
       .filter(x=>allRelationsAreNeverFollow(x))
