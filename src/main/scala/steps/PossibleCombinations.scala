@@ -22,7 +22,8 @@ class PossibleCombinations(val events: Dataset[String]) extends Serializable {
       .map(ev=>(eventsNum.toString, ev))
       .groupByKey(x=>x._1)
       .mapGroups{case(k, iter) => (k, iter.map(x => x._2).toList)}
-      .first()
+      .limit(1)
+      .head()
       ._2
 
     (1 to eventsNum).flatMap(eventsList.combinations)

@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import misc.{CausalGroup, Pair, Relation}
 import org.apache.spark.sql._
+import org.apache.spark.sql.functions.{col, split}
 
 /**
   * Accept us input footprint's graph data. In the following form
@@ -30,40 +31,40 @@ import org.apache.spark.sql._
 @SerialVersionUID(100L)
 class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serializable {
 
- /* val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().toDF("never")
-  val causalityRelationPairs = logRelations.filter(x=>x._2==Relation.CAUSALITY.toString).map(x=>x._1).distinct().toDF("causal")*/
+  /* val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().toDF("never")
+   val causalityRelationPairs = logRelations.filter(x=>x._2==Relation.CAUSALITY.toString).map(x=>x._1).distinct().toDF("causal")*/
   //implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
   val spark = SparkSession.builder().getOrCreate()
   implicit def string2stringEncoder: org.apache.spark.sql.Encoder[(String, String)] = org.apache.spark.sql.Encoders.kryo[(String, String)]
 
- /* val spark = SparkSession.builder().getOrCreate()
-  import spark.implicits._
-  import org.apache.spark.sql.functions._
-  val delimeter = "%%%%";
+  /* val spark = SparkSession.builder().getOrCreate()
+   import spark.implicits._
+   import org.apache.spark.sql.functions._
+   val delimeter = "%%%%";
 
-  val never = logRelations
-    .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
-    .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
-    .withColumn("col1", split(col("value"), delimeter).getItem(0))
-    .withColumn("col2", split(col("value"), delimeter).getItem(1))
-    .drop("value")
+   val never = logRelations
+     .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
+     .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+     .withColumn("col1", split(col("value"), delimeter).getItem(0))
+     .withColumn("col2", split(col("value"), delimeter).getItem(1))
+     .drop("value")
 
-  val causality = logRelations
-    .filter(x=>x._2==Relation.CAUSALITY.toString)
-    .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
-    .withColumn("col1", split(col("value"), delimeter).getItem(0))
-    .withColumn("col2", split(col("value"), delimeter).getItem(1))
-    .drop("value")*/
+   val causality = logRelations
+     .filter(x=>x._2==Relation.CAUSALITY.toString)
+     .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+     .withColumn("col1", split(col("value"), delimeter).getItem(0))
+     .withColumn("col2", split(col("value"), delimeter).getItem(1))
+     .drop("value")*/
 
   //implicit def stringEncoder: org.apache.spark.sql.Encoder[(String, String)] = org.apache.spark.sql.Encoders.kryo[(String, String)]
   implicit def pairEncoder: org.apache.spark.sql.Encoder[Pair] = org.apache.spark.sql.Encoders.kryo[Pair]
 
- /*
-  implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
-  implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
-  implicit def rowEncoder: org.apache.spark.sql.Encoder[Row] = org.apache.spark.sql.Encoders.kryo[Row]
-  implicit def pairStringEncoder: org.apache.spark.sql.Encoder[(Pair, String)] = org.apache.spark.sql.Encoders.kryo[(Pair, String)]
-  implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]*/
+  /*
+   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
+   implicit def setEncoder: org.apache.spark.sql.Encoder[Set[String]] = org.apache.spark.sql.Encoders.kryo[Set[String]]
+   implicit def rowEncoder: org.apache.spark.sql.Encoder[Row] = org.apache.spark.sql.Encoders.kryo[Row]
+   implicit def pairStringEncoder: org.apache.spark.sql.Encoder[(Pair, String)] = org.apache.spark.sql.Encoders.kryo[(Pair, String)]
+   implicit def listCausalGroupsEncoder: org.apache.spark.sql.Encoder[List[CausalGroup[String]]] = org.apache.spark.sql.Encoders.kryo[List[CausalGroup[String]]]*/
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
                                e2: Encoder[A2]
@@ -81,13 +82,13 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .map(causal => causal._1)
       .distinct()
 
-    val causalGroupFromLeftSide = extractCausalGroupPart(uniqueEventsFromLeftSideEvents);
+    val causalGroupFromLeftSide = extractCausalGroupPart(uniqueEventsFromLeftSideEvents)
 
     val uniqueEventsFromRightSideEvents = directCausalRelations
       .map(causal => causal._2)
       .distinct()
 
-    val causalGroupFromRightSide = extractCausalGroupPart(uniqueEventsFromRightSideEvents);
+    val causalGroupFromRightSide = extractCausalGroupPart(uniqueEventsFromRightSideEvents)
 
     computeCausalGroups(causalGroupFromLeftSide, causalGroupFromRightSide)
   }
@@ -151,6 +152,32 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       .find(pair=> isNotNeverFollow(pair) || isNotNeverFollow(createInversePair(pair)))  //find the first element in the collection which matches the predicate.
 
     atLeastOneNotNeverFollowe.isEmpty
+    /*import spark.implicits._
+    val delimeter = "%%%%";
+    val possibleGroupDF = possibleGroup.toSeq.toDF("event")
+
+    val possiblePairs = possibleGroupDF.as("part1")
+      .crossJoin(possibleGroupDF.as("part2"))
+      .where($"part1.event" > $"part2.event")
+      .map(pair=>pair.getString(0).concat(delimeter).concat(pair.getString(1)))
+      .withColumn("event1", split(col("value"), delimeter).getItem(0))
+      .withColumn("event2", split(col("value"), delimeter).getItem(1))
+      .drop("value")
+
+    val neverFollowPairs = logRelations
+      .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
+      .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+      .withColumn("event1", split(col("value"), delimeter).getItem(0))
+      .withColumn("event2", split(col("value"), delimeter).getItem(1))
+      .drop("value")
+
+    val atLeastOneNotNeverFollowed = possiblePairs
+      .join(neverFollowPairs)
+      .where((neverFollowPairs.col("event1")===possiblePairs.col("event1") && neverFollowPairs.col("event2")===possiblePairs.col("event2"))
+        || (neverFollowPairs.col("event1")===possiblePairs.col("event2") && neverFollowPairs.col("event2")===possiblePairs.col("event1")
+        ))
+
+    atLeastOneNotNeverFollowed.count()==possiblePairs.count()*/
   }
 
   def isNotNeverFollow(pair: Pair): Boolean = {
@@ -177,7 +204,6 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
   }
 
   def isCausal(pair: Pair): Boolean = {
-    val spark = SparkSession.builder().getOrCreate()
     import spark.implicits._
     import org.apache.spark.sql.functions._
     val delimeter = "%%%%";
@@ -197,20 +223,20 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
     return new Pair(pair.getSecondMember(), pair.getFirstMember())
   }
 
-/*  def isNeverFollowed(pair: Pair): Boolean = {
-    val spark = SparkSession.builder().getOrCreate()
-    import spark.implicits._
-    import org.apache.spark.sql.functions._
+  /*  def isNeverFollowed(pair: Pair): Boolean = {
+      val spark = SparkSession.builder().getOrCreate()
+      import spark.implicits._
+      import org.apache.spark.sql.functions._
 
-    val delimeter = "%%%%";
+      val delimeter = "%%%%";
 
-    return logRelations
-      .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
-      .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
-      .withColumn("col1", split(col("value"), delimeter).getItem(0))
-      .withColumn("col2", split(col("value"), delimeter).getItem(1))
-      .drop("value")
-  }*/
+      return logRelations
+        .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
+        .map(x=>x._1.getFirstMember().concat(delimeter).concat(x._1.getSecondMember()))
+        .withColumn("col1", split(col("value"), delimeter).getItem(0))
+        .withColumn("col2", split(col("value"), delimeter).getItem(1))
+        .drop("value")
+    }*/
 
   /* def isCausalityRelation(pair: Pair): Boolean = {
      return causalityRelationPairs.filter(x=>x==pair).count()!=0;
@@ -299,25 +325,25 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
 
 
 
-/*  def tost(): Unit = {
-    //implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
-    val spark = SparkSession.builder().getOrCreate()
-    import spark.implicits._
-    import org.apache.spark.sql.functions._
-    spark.conf.set("spark.sql.crossJoin.enabled", "true")
+  /*  def tost(): Unit = {
+      //implicit def stringEncoder: org.apache.spark.sql.Encoder[String] = org.apache.spark.sql.Encoders.kryo[String]
+      val spark = SparkSession.builder().getOrCreate()
+      import spark.implicits._
+      import org.apache.spark.sql.functions._
+      spark.conf.set("spark.sql.crossJoin.enabled", "true")
 
-    val uniqueCausalLeftSide = logRelations
-      .filter(x=>x._2==Relation.CAUSALITY.toString)
-      .map(x=>x._1.getFirstMember())
-      .distinct()
-      .toDF("causalLeft")
+      val uniqueCausalLeftSide = logRelations
+        .filter(x=>x._2==Relation.CAUSALITY.toString)
+        .map(x=>x._1.getFirstMember())
+        .distinct()
+        .toDF("causalLeft")
 
-    val duplicatedPairs = uniqueCausalLeftSide.as("part1")
-      .join(uniqueCausalLeftSide.as("part2"))
-      .where($"part1.causalLeft" !== $"part2.causalLeft")
-      .toDF("a1", "a2")
-      .show(100)
+      val duplicatedPairs = uniqueCausalLeftSide.as("part1")
+        .join(uniqueCausalLeftSide.as("part2"))
+        .where($"part1.causalLeft" !== $"part2.causalLeft")
+        .toDF("a1", "a2")
+        .show(100)
 
 
-  }*/
+    }*/
 }
