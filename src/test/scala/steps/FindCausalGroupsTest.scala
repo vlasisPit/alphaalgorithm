@@ -54,19 +54,19 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
       .toDS();
 
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-    val causalGroups = findCausalGroups.extractCausalGroups()
+    val causalGroups = findCausalGroups.extractCausalGroups().collect().toList
 
-    assert(contains(causalGroups, new CausalGroup[String](Set("E"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("C"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B", "E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("C", "E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B", "E"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C", "E"), Set("D"))))
-    assert(causalGroups.count()==10)
+    assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C", "E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B", "E"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C", "E"), Set("D"))))
+    assert(causalGroups.size==10)
   }
 
    test("Check FindCausalGroups correct functionality - Log 2") {
@@ -84,20 +84,20 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
        .toDS();
 
      val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-     val causalGroups = findCausalGroups.extractCausalGroups()
+     val causalGroups = findCausalGroups.extractCausalGroups().collect().toList
 
-     assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B"))))
-     assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("C"))))
-     assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("D"))))
-     assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("D"))))
-     assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B", "C"))))
-     assert(contains(causalGroups, new CausalGroup[String](Set("B", "C"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B", "C"))))
+     assert(causalGroups.contains(new CausalGroup[String](Set("B", "C"), Set("D"))))
 
      //false assertions
-     assert(!contains(causalGroups, new CausalGroup[String](Set("B"), Set("I"))))
-     assert(!contains(causalGroups, new CausalGroup[String](Set("B", "R"), Set("D"))))
+     assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
+     assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
-     assert(causalGroups.count()==6)
+     assert(causalGroups.size==6)
    }
 
   test("Check FindCausalGroups correct functionality - Log 3") {
@@ -134,25 +134,25 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     ).toDS();
 
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-    val causalGroups = findCausalGroups.extractCausalGroups()
+    val causalGroups = findCausalGroups.extractCausalGroups().collect().toList
 
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("C"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B","C"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("G"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("F","G"), Set("H"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("D"), Set("F"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("E"), Set("F"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("F"), Set("H"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("G"), Set("H"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B","C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("G"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("F","G"), Set("H"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("D"), Set("F"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("F"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("F"), Set("H"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("G"), Set("H"))))
 
     //false assertions
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B"), Set("I"))))
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B", "R"), Set("D"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
-    assert(causalGroups.count()==11)
+    assert(causalGroups.size==11)
   }
 
 
@@ -171,21 +171,21 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     ).toDS();
 
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-    val causalGroups = findCausalGroups.extractCausalGroups()
+    val causalGroups = findCausalGroups.extractCausalGroups().collect().toList
 
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("E"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("C"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A","E"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("E","D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A","E"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("E","D"))))
 
     //false assertions
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B"), Set("I"))))
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B", "R"), Set("D"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
-    assert(causalGroups.count()==7)
+    assert(causalGroups.size==7)
   }
 
   test("Check FindCausalGroups correct functionality - Log 5") {
@@ -224,25 +224,25 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
       .toDS();
 
     val findCausalGroups: FindCausalGroups = new FindCausalGroups(logRelations)
-    val causalGroups = findCausalGroups.extractCausalGroups()
+    val causalGroups = findCausalGroups.extractCausalGroups().collect().toList
 
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("A"), Set("B","D"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("B"), Set("C"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("D"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("C","D"), Set("E"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("E"), Set("F"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("E"), Set("G"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("F"), Set("H"))))
-    assert(contains(causalGroups, new CausalGroup[String](Set("G"), Set("H"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("A"), Set("B","D"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("B"), Set("C"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("D"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("C","D"), Set("E"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("F"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("E"), Set("G"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("F"), Set("H"))))
+    assert(causalGroups.contains(new CausalGroup[String](Set("G"), Set("H"))))
 
     //false assertions
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B"), Set("I"))))
-    assert(!contains(causalGroups, new CausalGroup[String](Set("B", "R"), Set("D"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B"), Set("I"))))
+    assert(!causalGroups.contains(new CausalGroup[String](Set("B", "R"), Set("D"))))
 
-    assert(causalGroups.count()==11)
+    assert(causalGroups.size==11)
   }
 
   test("Check if a NeverFollow Relation exists. All relations are never follow") {
@@ -338,7 +338,4 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(newGroups.size==4)
   }
 
-  def contains(pairs : Dataset[CausalGroup[String]], causalGroup: CausalGroup[String]): Boolean = {
-    return pairs.filter(x=>x==causalGroup).count()!=0
-  }
 }
