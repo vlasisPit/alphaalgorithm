@@ -141,6 +141,8 @@ class FindMaximalPairsTest extends FunSuite {
   }
 
   test("Check is subset functionality") {
+    val causalGroups = List(new CausalGroup[String](Set("A"), Set("B"))).toDS()
+
     val groups_A1 = (new CausalGroup[String](Set("A"), Set("B")), new CausalGroup[String](Set("A"), Set("B", "E")))  //true
     val groups_A2 = (new CausalGroup[String](Set("A"), Set("B", "E")), new CausalGroup[String](Set("A"), Set("B")))  //false
     val groups_B1 = (new CausalGroup[String](Set("A"), Set("B")), new CausalGroup[String](Set("A"), Set("E"))) //false
@@ -153,7 +155,7 @@ class FindMaximalPairsTest extends FunSuite {
     val groups_G2 = (new CausalGroup[String](Set("B"), Set("D", "F")), new CausalGroup[String](Set("A", "B", "C"), Set("D", "E")))  //false
     val groups_H1 = (new CausalGroup[String](Set("A", "B", "C"), Set("E")), new CausalGroup[String](Set("B"), Set("E", "F")))  //false
 
-    val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(null)
+    val findMaximalPairs: FindMaximalPairs = new FindMaximalPairs(causalGroups)
 
     assert(findMaximalPairs.isSubsetOf(groups_A1._1, groups_A1._2) == true)
     assert(findMaximalPairs.isSubsetOf(groups_A2._1, groups_A2._2) == false)

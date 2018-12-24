@@ -12,6 +12,8 @@ import org.apache.spark.sql._
 @SerialVersionUID(100L)
 class FindMaximalPairs(val causalGroups: Dataset[CausalGroup[String]]) extends Serializable {
 
+  val causalGroupsList = causalGroups.collect().toList
+
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def tuple2[A1, A2](
                                implicit e1: Encoder[A1],
@@ -27,14 +29,12 @@ class FindMaximalPairs(val causalGroups: Dataset[CausalGroup[String]]) extends S
   def extract(): List[CausalGroup[String]] = {
     val spark = SparkSession.builder().getOrCreate()
 
-    return causalGroups
+    return causalGroupsList
       .filter(x=>toBeRetained(x))
-      .collect()
-      .toList;
   }
 
   def toBeRetained(toCheck: CausalGroup[String]): Boolean = {
-    return causalGroups.filter(x=>x!=toCheck && isSubsetOf(toCheck, x)).count()==0;
+    return causalGroupsList.filter(x=>x!=toCheck && isSubsetOf(toCheck, x)).size==0;
   }
 
   /**
