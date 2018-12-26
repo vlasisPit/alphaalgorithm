@@ -155,7 +155,6 @@ class FindCausalGroupsTest extends FunSuite with BeforeAndAfter {
     assert(causalGroups.size==11)
   }
 
-
   test("Check FindCausalGroups correct functionality - Log 4") {
     val logRelations = Seq(
       (new Pair("A", "C"), Relation.NEVER_FOLLOW.toString),

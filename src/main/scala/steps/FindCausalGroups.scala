@@ -1,5 +1,7 @@
 package steps
 
+import java.util.concurrent.TimeUnit
+
 import misc.{CausalGroup, Pair, Relation}
 import org.apache.spark.sql.{Dataset, Encoder, Encoders, SparkSession}
 
@@ -38,35 +40,55 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
                                e2: Encoder[A2]
                              ): Encoder[(A1,A2)] = Encoders.tuple[A1,A2](e1, e2)
 
-  val neverFollowPairs = logRelations.filter(x=>x._2==Relation.NEVER_FOLLOW.toString).map(x=>x._1).distinct().collect().toList
-
   val spark = SparkSession.builder().getOrCreate()
-  import spark.implicits._
+
+  val t0 = System.nanoTime()
+  val never = logRelations
+    .filter(x=>x._2==Relation.NEVER_FOLLOW.toString)
+    .map(neverRelation => neverRelation._1)
+    .distinct()
+    .collect()
+    .toList
+
+  val neverBc = spark.sparkContext.broadcast(never)
+  println("Collect to list " + TimeUnit.SECONDS.convert(System.nanoTime() - t0, TimeUnit.NANOSECONDS) + "sec")
 
   def extractCausalGroups():Dataset[CausalGroup[String]] = {
     val directCausalGroups = logRelations
       .filter(x=>x._2==Relation.CAUSALITY.toString)
       .map(x=>x._1)
       .map(x=>new CausalGroup(Set(x.member1), Set(x.member2)))
+      .distinct()
 
-    val causalGroupsFromLeft = directCausalGroups
+    val causalGroupsFromLeftPart = directCausalGroups
       .groupByKey(x=>x.getFirstGroup())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
+      .distinct()
+      .collect()
+      .toList
+
+    val causalGroupsFromLeft = causalGroupsFromLeftPart
       .flatMap(x=> createFinalCausalGroupsLeft(x))
 
-    val causalGroupsFromRight = directCausalGroups
+    val causalGroupsFromRightPart = directCausalGroups
       .map(x=>new CausalGroup(x.getSecondGroup(), x.getFirstGroup()))
       .groupByKey(x=>x.getFirstGroup())
       .mapGroups{case(k, iter) => (k, iter.map(x => x.getSecondGroup().head).toSet)}
       .filter(x=>x._2.size>1)
       .map(x=>new CausalGroup(x._1, x._2))
+      .distinct()
+      .collect()
+      .toList
+
+    val causalGroupsFromRight = causalGroupsFromRightPart
       .flatMap(x=> createFinalCausalGroupsRight(x))
 
+    import spark.implicits._
     return directCausalGroups
-      .union(causalGroupsFromLeft)
-      .union(causalGroupsFromRight);
+      .union(causalGroupsFromLeft.toDS())
+      .union(causalGroupsFromRight.toDS());
   }
 
   /**
@@ -126,15 +148,29 @@ class FindCausalGroups(val logRelations: Dataset[(Pair, String)]) extends Serial
       (y, idxY) <- possibleGroup.zipWithIndex
       if idxX < idxY
     } yield new Pair(x,y)
-    val numberOfNeverFollowPairs = allPossiblePairs
-      .filter(x=> (neverFollowPairs.contains(x) || neverFollowPairs.contains(createInversePair(x))))
-      .toList.length
+    val notNeverFollow = allPossiblePairs
+      .find(x=> (!neverBc.value.contains(x) && !neverBc.value.contains(createInversePair(x))))
 
-    if (numberOfNeverFollowPairs == allPossiblePairs.size) true else false
+    notNeverFollow.isEmpty
   }
 
   def createInversePair(pair : Pair): Pair = {
     return new Pair(pair.getSecondMember(), pair.getFirstMember())
   }
+
+/*  def isNeverFollow(pair: Pair): Boolean = {
+    println("check ...")
+
+    val t0 = System.nanoTime()
+    val ckeckedPair = neverBc.value
+      .filter(neverPair=>(neverPair.getFirstMember()==pair.getFirstMember() && neverPair.getSecondMember()==pair.getSecondMember())
+        || (neverPair.getFirstMember()==pair.getSecondMember() &&neverPair.getSecondMember()==pair.getFirstMember()))
+      .limit(1)
+
+    val t1 = System.nanoTime()
+    println("Elapsed time compute never follow each: All possible comb " + TimeUnit.SECONDS.convert(t1 - t0, TimeUnit.NANOSECONDS) + "sec")
+
+    ckeckedPair.count() != 0;
+  }*/
 
 }

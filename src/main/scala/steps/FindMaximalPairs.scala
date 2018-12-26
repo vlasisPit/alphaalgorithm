@@ -12,7 +12,10 @@ import org.apache.spark.sql._
 @SerialVersionUID(100L)
 class FindMaximalPairs(val causalGroups: Dataset[CausalGroup[String]]) extends Serializable {
 
-  val causalGroupsList = causalGroups.collect().toList
+  val causalGroupsList = causalGroups
+    .distinct()
+    .collect()
+    .toList
 
   implicit def causalGroupGenericEncoder: org.apache.spark.sql.Encoder[CausalGroup[String]] = org.apache.spark.sql.Encoders.kryo[CausalGroup[String]]
   implicit def tuple2[A1, A2](

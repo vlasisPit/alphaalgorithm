@@ -15,9 +15,9 @@ object AlphaAlgorithm {
   def main(args: Array[String]): Unit = {
     Logger.getLogger("org").setLevel(Level.ERROR)
     val traceTools: TraceTools = new TraceTools()
-    val logPath = "src/main/resources/mockData.csv"
-    val numOfTraces = 3
-    val readAll : Boolean = true
+    val logPath = "src/main/resources/readDataFiltered.csv"
+    val numOfTraces = 15
+    val readAll : Boolean = false
 
     val spark = SparkSession
       .builder()
