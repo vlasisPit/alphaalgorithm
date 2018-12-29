@@ -3,7 +3,7 @@ package tools
 import org.apache.spark.sql.{Dataset, Encoders, SparkSession}
 
 import scala.collection.mutable.ListBuffer
-import misc.Pair
+import misc.{CausalGroup, Pair}
 
 @SerialVersionUID(100L)
 class TraceTools extends Serializable {
@@ -121,4 +121,32 @@ class TraceTools extends Serializable {
     return pairs.toList
   }
 
+  /**
+    * Filter initial trace set. Keep only unique traces and not duplicates.
+    * Also, filter out those traces, which have frequency less than percentage variable.
+    * @param tracesDS
+    * @param percentage
+    * @return
+    */
+  def filterTraces(tracesDS: Dataset[(String, List[String])], percentage: Float): Dataset[(String, List[String])] = {
+    implicit def listStringEncoder: org.apache.spark.sql.Encoder[List[String]] = org.apache.spark.sql.Encoders.kryo[List[String]]
+    implicit def tupleListStringEncoder: org.apache.spark.sql.Encoder[(String, List[String])] = org.apache.spark.sql.Encoders.kryo[(String, List[String])]
+    implicit def longStringEncoder: org.apache.spark.sql.Encoder[(List[String], Long)] = org.apache.spark.sql.Encoders.kryo[(List[String], Long)]
+    implicit def floatStringEncoder: org.apache.spark.sql.Encoder[(List[String], Float)] = org.apache.spark.sql.Encoders.kryo[(List[String], Float)]
+
+    val initNumberOfTraces = tracesDS.count()
+    println("Initial number of traces = " + initNumberOfTraces)
+
+    import org.apache.spark.sql.functions._
+    val tracesToInspect = tracesDS
+      .toDF("traceId", "trace")
+      .groupBy("trace")
+      .agg(count("trace"))
+      .map(trace=>(trace.getAs[Seq[String]]("trace").toList,trace.getAs[Long]("count(trace)")))
+      .filter(trace => (trace._2.toFloat / initNumberOfTraces) > (percentage/100) )
+      .map(trace=>("xxx", trace._1))
+
+    println("Number of traces to inspect = " + tracesToInspect.count())
+    tracesToInspect
+  }
 }

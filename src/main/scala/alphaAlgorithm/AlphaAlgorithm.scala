@@ -16,8 +16,10 @@ object AlphaAlgorithm {
     Logger.getLogger("org").setLevel(Level.ERROR)
     val traceTools: TraceTools = new TraceTools()
     val logPath = "src/main/resources/readDataFiltered.csv"
-    val numOfTraces = 15
+    val numOfTraces = 3
+    val percentage : Float = 1 //delete trace occurrences which are less than 1% from all traces
     val readAll : Boolean = false
+    val filtering : Boolean = true
 
     val spark = SparkSession
       .builder()
@@ -26,13 +28,19 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    val tracesDS : Dataset[(String, List[String])] = readAll match {
+    val initialTracesDS : Dataset[(String, List[String])] = readAll match {
       case true => traceTools.readAllTracesFromCsvFile(logPath)
       case false => traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
     }
 
-    val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
-    println(petriNet)
+    if (filtering) {
+      val traceDS_filtered : Dataset[(String, List[String])] = traceTools.filterTraces(initialTracesDS, percentage)
+      val petriNet: PetriNet = executeAlphaAlgorithm(traceDS_filtered)
+      println(petriNet)
+    } else {
+      val petriNet: PetriNet = executeAlphaAlgorithm(initialTracesDS)
+      println(petriNet)
+    }
 
     // Stop the session
     spark.stop()
