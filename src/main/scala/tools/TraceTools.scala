@@ -1,12 +1,25 @@
 package tools
 
+import misc.Pair
 import org.apache.spark.sql.{Dataset, Encoders, SparkSession}
 
 import scala.collection.mutable.ListBuffer
-import misc.{CausalGroup, Pair}
 
 @SerialVersionUID(100L)
 class TraceTools extends Serializable {
+
+  def getTracesToInspect(logPath: String, numOfTraces: Int, readAll: Boolean, filtering: Boolean, percentage: Float): Dataset[(String, List[String])] = {
+    val initialTracesDS : Dataset[(String, List[String])] = readAll match {
+      case true => readAllTracesFromCsvFile(logPath)
+      case false => readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
+    }
+
+    if (filtering) {
+      filterTraces(initialTracesDS, percentage)
+    } else {
+      initialTracesDS
+    }
+  }
 
   def tracesDSFromLogFile(logPath: String) : Dataset[(String, List[String])] = {
     val spark = SparkSession.builder().getOrCreate()

@@ -28,19 +28,10 @@ object AlphaAlgorithm {
       .config("spark.sql.warehouse.dir", "file:///C:/temp") // Necessary to work around a Windows bug in Spark 2.0.0; omit if you're not on Windows.
       .getOrCreate()
 
-    val initialTracesDS : Dataset[(String, List[String])] = readAll match {
-      case true => traceTools.readAllTracesFromCsvFile(logPath)
-      case false => traceTools.readSpecificNumberOfTracesFromCsvFile(logPath, numOfTraces)
-    }
+    val tracesDS : Dataset[(String, List[String])] = traceTools.getTracesToInspect(logPath, numOfTraces, readAll, filtering, percentage)
 
-    if (filtering) {
-      val traceDS_filtered : Dataset[(String, List[String])] = traceTools.filterTraces(initialTracesDS, percentage)
-      val petriNet: PetriNet = executeAlphaAlgorithm(traceDS_filtered)
-      println(petriNet)
-    } else {
-      val petriNet: PetriNet = executeAlphaAlgorithm(initialTracesDS)
-      println(petriNet)
-    }
+    val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
+    println(petriNet)
 
     // Stop the session
     spark.stop()
