@@ -6,7 +6,7 @@ import misc.{Directionality, Pair, PairNotation, Relation}
   * Find log relations
   * a->b iff a>b && !(b>a)
   * a||b iff a>b && b>a
-  * a#b iff a>b && !(b>a)
+  * a#b iff !(a>b) && !(b>a)
   */
 @SerialVersionUID(100L)
 class FindLogRelations() extends Serializable {
