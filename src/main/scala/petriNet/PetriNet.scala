@@ -19,5 +19,5 @@ class PetriNet (val places: Places, val events: List[String], val edges: List[Ed
   }
 
 
-  override def toString = s"PetriNet(places = $getPlaces, events = $getEvents, edges = $getEdges)"
+  override def toString = s"PetriNet(\n places = \t  $getPlaces \n events = \t  $getEvents, \n edges = \t  $getEdges)"
 }

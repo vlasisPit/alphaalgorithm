@@ -16,7 +16,7 @@ object AlphaAlgorithm {
     Logger.getLogger("org").setLevel(Level.ERROR)
     val traceTools: TraceTools = new TraceTools()
     val logPath = "src/main/resources/readDataFiltered.csv"
-    val numOfTraces = 3
+    val numOfTraces = 2
     val percentage : Float = 1 //delete trace occurrences which are less than 1% from all traces
     val readAll : Boolean = false
     val filtering : Boolean = true
@@ -31,7 +31,7 @@ object AlphaAlgorithm {
     val tracesDS : Dataset[(String, List[String])] = traceTools.getTracesToInspect(logPath, numOfTraces, readAll, filtering, percentage)
 
     val petriNet: PetriNet = executeAlphaAlgorithm(tracesDS)
-    println(petriNet)
+    println(petriNet.toString)
 
     // Stop the session
     spark.stop()
